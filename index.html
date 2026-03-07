@@ -68,6 +68,40 @@ Pi.createPayment(paymentData,callbacks);
 </script>
 
 </body>
+</html>
+fetch("/api/approve",{
+method:"POST",
+headers:{'Content-Type':'application/json'},
+body:JSON.stringify({paymentId})
+});
+
+},
+
+onReadyForServerCompletion:(paymentId,txid)=>{
+
+fetch("/api/complete",{
+method:"POST",
+headers:{'Content-Type':'application/json'},
+body:JSON.stringify({paymentId,txid})
+});
+
+alert("Payment Success");
+
+},
+
+onCancel:()=>alert("Payment Cancelled"),
+
+onError:(err)=>console.log(err)
+
+};
+
+Pi.createPayment(paymentData,callbacks);
+
+}
+
+</script>
+
+</body>
 </html><button id="payBtn">Pay 1 Pi</button>
 
 <script>
