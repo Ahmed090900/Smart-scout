@@ -1,121 +1,69 @@
 <!DOCTYPE html>
 <html lang="ar" dir="rtl">
 <head>
-  <meta charset="UTF-8">
-  <title>Smart Scout</title>
-  <script src="https://sdk.minepi.com/pi-sdk.js"></script>
+<meta charset="UTF-8">
+<title>Smart Scout</title>
 
-  <style>
-    body {
-      font-family: Arial, sans-serif;
-      text-align: center;
-      margin-top: 100px;
-    }
-    button {
-      padding: 15px 35px;
-      background: #6200ea;
-      color: white;
-      border: none;
-      border-radius: 12px;
-      font-size: 20px;
-      cursor: pointer;
-    }
-    button:hover { background: #3700b3; }
-  </style>
+<script src="https://sdk.minepi.com/pi-sdk.js"></script>
+
+<style>
+body{
+font-family:Arial;
+text-align:center;
+margin-top:100px;
+}
+
+button{
+padding:15px 25px;
+background:purple;
+color:white;
+border:none;
+border-radius:8px;
+font-size:18px;
+}
+</style>
+
 </head>
+
 <body>
 
-  <h1>Smart Scout</h1>
-  <p>اضغط الزر للدفع ١ Pi</p>
+<h1>Smart Scout</h1>
+<p>اضغط الزر للدفع 1 Pi</p>
 
-  <button id="payBtn">ادفع ١ Pi</button>
+<button id="payBtn">Pay 1 Pi</button>
 
-  <script>
-    Pi.init({ version: "2.0", sandbox: true });
+<script>
 
-    const payButton = document.getElementById("payBtn");
+Pi.init({ version:"2.0", sandbox:true });
 
-    payButton.onclick = async () => {
-      payButton.disabled = true; // منع الضغط المتكرر
-      payButton.textContent = "جاري التحميل...";
+async function login(){
 
-      try {
-        const paymentData = {
-          amount: 1,
-          memo: "Smart Scout Test Payment",
-          metadata: { orderId: "123" }
-        };
+const scopes=['username','payments'];
 
-        const callbacks = {
-          onReadyForServerApproval: function(paymentId) {
-            fetch("/api/approve", {
-              method: "POST",
-              headers: { "Content-Type": "application/json" },
-              body: JSON.stringify({ paymentId })
-            })
-            .then(r => r.json())
-            .catch(err => console.error("Approval failed:", err));
-          },
+try{
 
-          onReadyForServerCompletion: function(paymentId, txid) {
-            fetch("/api/complete", {
-              method: "POST",
-              headers: { "Content-Type": "application/json" },
-              body: JSON.stringify({ paymentId, txid })
-            })
-            .then(r => r.json())
-            .then(() => {
-              alert("تم الدفع بنجاح ✓");
-            })
-            .catch(err => console.error("Completion failed:", err));
-          },
+const auth=await Pi.authenticate(scopes);
+console.log(auth.user);
 
-          onCancel: function() {
-            alert("تم إلغاء الدفع");
-          },
-
-          onError: function(error) {
-            console.error("خطأ في الدفع:", error);
-            alert("حدث خطأ أثناء الدفع");
-          }
-        };
-
-        Pi.createPayment(paymentData, callbacks);
-
-      } catch (err) {
-        console.error(err);
-        alert("فشل في بدء عملية الدفع");
-      } finally {
-        payButton.disabled = false;
-        payButton.textContent = "ادفع ١ Pi";
-      }
-    };
-  </script>
-
-</body>
-</html>
-console.log("User:", currentUser);
-
-} catch (err) {
-console.error(err);
+}catch(e){
+console.log(e);
 }
 
 }
 
 login();
 
-// زر الدفع
-document.getElementById("payBtn").onclick = function(){
+document.getElementById("payBtn").onclick=function(){
 
-const paymentData = {
-amount: 1,
-memo: "Smart Scout Test",
-metadata: { orderId: "123" }
+const paymentData={
+amount:1,
+memo:"Smart Scout Test",
+metadata:{orderId:"123"}
 };
 
-const callbacks = {
+const callbacks={
 
-onReadyForServerApproval: function(paymentId){
+onReadyForServerApproval:function(paymentId){
 
 fetch("/api/approve",{
 method:"POST",
@@ -125,7 +73,7 @@ body:JSON.stringify({paymentId})
 
 },
 
-onReadyForServerCompletion: function(paymentId, txid){
+onReadyForServerCompletion:function(paymentId,txid){
 
 fetch("/api/complete",{
 method:"POST",
@@ -137,165 +85,21 @@ alert("Payment Success");
 
 },
 
-onCancel: function(paymentId){
+onCancel:function(){
 alert("Payment Cancelled");
 },
 
-onError: function(error,payment){
-console.error(error);
-alert("Payment Error");
-}
-
-};
-
-Pi.createPayment(paymentData, callbacks);
-
-}
-
-</script>
-
-</body>
-</html>
-fetch("/api/approve",{
-method:"POST",
-headers:{'Content-Type':'application/json'},
-body:JSON.stringify({paymentId})
-});
-
-},
-
-onReadyForServerCompletion:(paymentId,txid)=>{
-
-fetch("/api/complete",{
-method:"POST",
-headers:{'Content-Type':'application/json'},
-body:JSON.stringify({paymentId,txid})
-});
-
-alert("Payment Success");
-
-},
-
-onCancel:()=>alert("Payment Cancelled"),
-
-onError:(err)=>console.log(err)
-
-};
-
-Pi.createPayment(paymentData,callbacks);
-
-}
-
-</script>
-
-</body>
-</html>
-fetch("/api/approve",{
-method:"POST",
-headers:{'Content-Type':'application/json'},
-body:JSON.stringify({paymentId})
-});
-
-},
-
-onReadyForServerCompletion:(paymentId,txid)=>{
-
-fetch("/api/complete",{
-method:"POST",
-headers:{'Content-Type':'application/json'},
-body:JSON.stringify({paymentId,txid})
-});
-
-alert("Payment Success");
-
-},
-
-onCancel:()=>alert("Payment Cancelled"),
-
-onError:(err)=>console.log(err)
-
-};
-
-Pi.createPayment(paymentData,callbacks);
-
-}
-
-</script>
-
-</body>
-</html><button id="payBtn">Pay 1 Pi</button>
-
-<script>
-
-Pi.init({
-version: "2.0",
-sandbox: true
-});
-
-document.getElementById("payBtn").addEventListener("click", function(){
-
-const paymentData = {
-amount: 1,
-memo: "Smart Scout Test Payment",
-metadata: {orderId: "12345"}
-};
-
-const callbacks = {
-
-onReadyForServerApproval: function(paymentId){
-
-fetch("/approve",{
-method:"POST",
-headers:{
-"Content-Type":"application/json"
-},
-body: JSON.stringify({paymentId})
-})
-.then(res=>res.json())
-.then(data=>{
-console.log("Approved",data);
-});
-
-},
-
-onReadyForServerCompletion: function(paymentId, txid){
-
-fetch("/complete",{
-method:"POST",
-headers:{
-"Content-Type":"application/json"
-},
-body: JSON.stringify({paymentId, txid})
-})
-.then(res=>res.json())
-.then(data=>{
-alert("تم الدفع بنجاح");
-});
-
-},
-
-onCancel: function(paymentId){
-alert("تم إلغاء الدفع");
-},
-
-onError: function(error,payment){
-console.error(error);
-alert("حدث خطأ أثناء الدفع");
+onError:function(err){
+console.log(err);
 }
 
 };
 
 Pi.createPayment(paymentData,callbacks);
 
-});
+};
 
 </script>
 
-</body>
-</html>            };
-
-            Pi.createPayment(paymentData, callbacks);
-        };
-    </script>
 </body>
 </html>
