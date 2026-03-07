@@ -1,1 +1,43 @@
-<h1>Smart Scout is Ready</h1>
+<!DOCTYPE html>
+<html lang="ar">
+<head>
+    <meta charset="UTF-8">
+    <title>Smart Scout Payment Test</title>
+    <script src="https://sdk.minepi.com/pi-sdk.js"></script>
+</head>
+<body>
+    <h1>مرحباً بك في Smart Scout</h1>
+    <p>اضغط الزر بالأسفل لإتمام عملية دفع تجريبية بـ 1 Pi</p>
+    
+    <button id="pay-button" style="padding: 15px; background-color: purple; color: white; border: none; border-radius: 5px;">
+        دفع 1 Pi للتجربة
+    </button>
+
+    <script>
+        // تهيئة الـ SDK
+        Pi.init({ version: "2.0", sandbox: true });
+
+        document.getElementById('pay-button').onclick = function() {
+            const paymentData = {
+                amount: 1,
+                memo: "تجربة تطبيق Smart Scout",
+                metadata: { orderId: 123 }
+            };
+
+            const callbacks = {
+                onReadyForServerApproval: (paymentId) => {
+                    console.log("Payment Ready:", paymentId);
+                    // هنا المفروض تبعت الـ ID لسيرفرك، لكن للتجربة السيستم هيعديها
+                },
+                onReadyForServerCompletion: (paymentId, txid) => {
+                    console.log("Payment Complete:", txid);
+                },
+                onCancel: (paymentId) => { console.log("Cancelled"); },
+                onError: (error, payment) => { console.error(error); }
+            };
+
+            Pi.createPayment(paymentData, callbacks);
+        };
+    </script>
+</body>
+</html>
