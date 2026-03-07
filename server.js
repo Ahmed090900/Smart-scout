@@ -1,66 +1,22 @@
-const express = require("express");
-const axios = require("axios");
-
+const express = require('express');
 const app = express();
-
 app.use(express.json());
 
-const API_KEY = "usqgwegrliqtohsifyholnutf1cggxdmgpfyyr31uhfj4noemwfyibkgm2pnwfsy";
-
-app.post("/approve", async (req,res)=>{
-
-try{
-
-const paymentId = req.body.paymentId;
-
-await axios.post(
-`https://api.minepi.com/v2/payments/${paymentId}/approve`,
-{},
-{
-headers:{
-Authorization:`Key ${API_KEY}`
-}
-}
-);
-
-res.json({success:true});
-
-}catch(err){
-
-console.log(err);
-res.json({success:false});
-
-}
-
+app.post('/api/approve', (req, res) => {
+  const { paymentId } = req.body;
+  console.log('Approve:', paymentId);
+  res.json({ approved: true });
 });
 
-app.post("/complete", async (req,res)=>{
-
-try{
-
-const paymentId = req.body.paymentId;
-
-await axios.post(
-`https://api.minepi.com/v2/payments/${paymentId}/complete`,
-{},
-{
-headers:{
-Authorization:`Key ${API_KEY}`
-}
-}
-);
-
-res.json({success:true});
-
-}catch(err){
-
-console.log(err);
-res.json({success:false});
-
-}
-
+app.post('/api/complete', (req, res) => {
+  const { paymentId, txid } = req.body;
+  console.log('Complete:', paymentId, txid);
+  res.json({ success: true });
 });
 
-app.listen(3000,()=>{
-console.log("Server running on port 3000");
+app.get('*', (req, res) => {
+  res.sendFile(__dirname + '/index.html');
 });
+
+const port = process.env.PORT || 3000;
+app.listen(port, () => console.log(`Server running on port ${port}`));
