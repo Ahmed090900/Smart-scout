@@ -1,19 +1,23 @@
-export default async function handler(req,res){
+export default async function handler(req, res) {
+  if (req.method !== 'POST') {
+    return res.status(405).json({ error: 'Method not allowed' });
+  }
 
-const {paymentId}=req.body;
+  const { paymentId } = req.body;
 
-const response=await fetch(
-`https://api.minepi.com/v2/payments/${paymentId}/approve`,
-{
-method:"POST",
-headers:{
-Authorization:`Key ${process.env.PI_API_KEY}`
-}
-}
-);
+  if (!paymentId) {
+    return res.status(400).json({ error: 'Missing paymentId' });
+  }
 
-const data=await response.json();
+  try {
+    // هنا تضع منطق التحقق (مثلاً تحقق من order في قاعدة بيانات)
+    // للتجربة: نفترض كل شيء OK
+    console.log(`Approving payment: ${paymentId}`);
 
-res.status(200).json(data);
-
-}
+    // رد سريع للسماح لـ Pi بمواصلة
+    res.status(200).json({ approved: true });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ error: 'Server error during approval' });
+  }
+                          }
