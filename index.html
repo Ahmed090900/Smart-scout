@@ -4,37 +4,71 @@
 <meta charset="UTF-8">
 <title>Smart Scout Payment</title>
 <script src="https://sdk.minepi.com/pi-sdk.js"></script>
-
-<style>
-body{
-font-family: Arial;
-text-align:center;
-margin-top:100px;
-}
-
-button{
-padding:15px 25px;
-font-size:18px;
-background:purple;
-color:white;
-border:none;
-border-radius:8px;
-cursor:pointer;
-}
-
-button:hover{
-opacity:0.8;
-}
-</style>
-
 </head>
 
-<body>
+<body style="text-align:center;margin-top:100px;font-family:Arial">
 
 <h1>Smart Scout</h1>
-<p>اضغط الزر للدفع 1 Pi كتجربة</p>
+<p>اضغط الزر للدفع 1 Pi</p>
 
-<button id="payBtn">Pay 1 Pi</button>
+<button id="pay"
+style="padding:15px;background:purple;color:white;border:none;border-radius:8px">
+Pay 1 Pi
+</button>
+
+<script>
+
+Pi.init({
+version:"2.0",
+sandbox:true
+});
+
+document.getElementById("pay").onclick=()=>{
+
+const paymentData={
+amount:1,
+memo:"Smart Scout Test",
+metadata:{orderId:"123"}
+};
+
+const callbacks={
+
+onReadyForServerApproval:(paymentId)=>{
+
+fetch("/api/approve",{
+method:"POST",
+headers:{'Content-Type':'application/json'},
+body:JSON.stringify({paymentId})
+});
+
+},
+
+onReadyForServerCompletion:(paymentId,txid)=>{
+
+fetch("/api/complete",{
+method:"POST",
+headers:{'Content-Type':'application/json'},
+body:JSON.stringify({paymentId,txid})
+});
+
+alert("Payment Success");
+
+},
+
+onCancel:()=>alert("Payment Cancelled"),
+
+onError:(err)=>console.log(err)
+
+};
+
+Pi.createPayment(paymentData,callbacks);
+
+}
+
+</script>
+
+</body>
+</html><button id="payBtn">Pay 1 Pi</button>
 
 <script>
 
