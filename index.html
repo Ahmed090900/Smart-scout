@@ -11,30 +11,92 @@
 <h1>Smart Scout</h1>
 <p>اضغط الزر للدفع 1 Pi</p>
 
-<button id="pay"
+<button id="payBtn"
 style="padding:15px;background:purple;color:white;border:none;border-radius:8px">
 Pay 1 Pi
 </button>
 
 <script>
 
-Pi.init({
-version:"2.0",
-sandbox:true
+Pi.init({ version: "2.0", sandbox: true });
+
+let currentUser = null;
+
+// تسجيل الدخول للمستخدم
+async function login() {
+
+try {
+
+const scopes = ['username','payments'];
+
+const auth = await Pi.authenticate(scopes, function(payment){
+console.log("Incomplete payment found", payment);
 });
 
-document.getElementById("pay").onclick=()=>{
+currentUser = auth.user;
 
-const paymentData={
-amount:1,
-memo:"Smart Scout Test",
-metadata:{orderId:"123"}
+console.log("User:", currentUser);
+
+} catch (err) {
+console.error(err);
+}
+
+}
+
+login();
+
+// زر الدفع
+document.getElementById("payBtn").onclick = function(){
+
+const paymentData = {
+amount: 1,
+memo: "Smart Scout Test",
+metadata: { orderId: "123" }
 };
 
-const callbacks={
+const callbacks = {
 
-onReadyForServerApproval:(paymentId)=>{
+onReadyForServerApproval: function(paymentId){
 
+fetch("/api/approve",{
+method:"POST",
+headers:{'Content-Type':'application/json'},
+body:JSON.stringify({paymentId})
+});
+
+},
+
+onReadyForServerCompletion: function(paymentId, txid){
+
+fetch("/api/complete",{
+method:"POST",
+headers:{'Content-Type':'application/json'},
+body:JSON.stringify({paymentId,txid})
+});
+
+alert("Payment Success");
+
+},
+
+onCancel: function(paymentId){
+alert("Payment Cancelled");
+},
+
+onError: function(error,payment){
+console.error(error);
+alert("Payment Error");
+}
+
+};
+
+Pi.createPayment(paymentData, callbacks);
+
+}
+
+</script>
+
+</body>
+</html>
 fetch("/api/approve",{
 method:"POST",
 headers:{'Content-Type':'application/json'},
