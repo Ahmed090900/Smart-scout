@@ -1,230 +1,255 @@
 <!DOCTYPE html>
 <html lang="ar" dir="rtl">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>مدفوعات Pi Network</title>
-    
-    <script src="https://sdk.minepi.com/pi-sdk.js"></script>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>بوابة مدفوعات Pi</title>
 
-    <style>
-        :root {
-            --pi-purple: #5e2a84;
-            --pi-gold: #ffa500;
-            --bg-color: #f0f2f5;
-        }
+<script src="https://sdk.minepi.com/pi-sdk.js"></script>
 
-        body {
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            background-color: var(--bg-color);
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            height: 100vh;
-            margin: 0;
-            color: #333;
-        }
+<style>
+:root{
+--pi-purple:#5e2a84;
+--pi-gold:#ffa500;
+--bg:#f2f4f8;
+}
 
-        .payment-card {
-            background: white;
-            padding: 30px;
-            border-radius: 25px;
-            box-shadow: 0 15px 35px rgba(0,0,0,0.1);
-            width: 100%;
-            max-width: 400px;
-            text-align: center;
-        }
+body{
+font-family:Tahoma,Arial;
+background:var(--bg);
+display:flex;
+justify-content:center;
+align-items:center;
+height:100vh;
+margin:0;
+}
 
-        .pi-logo {
-            width: 70px;
-            height: 70px;
-            background: var(--pi-purple);
-            border-radius: 50%;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            margin: 0 auto 20px;
-        }
+.card{
+background:white;
+width:380px;
+padding:30px;
+border-radius:20px;
+box-shadow:0 10px 30px rgba(0,0,0,.1);
+text-align:center;
+}
 
-        .pi-logo span {
-            color: white;
-            font-size: 40px;
-            font-weight: bold;
-        }
+.logo{
+width:70px;
+height:70px;
+border-radius:50%;
+background:var(--pi-purple);
+display:flex;
+align-items:center;
+justify-content:center;
+margin:auto;
+margin-bottom:20px;
+}
 
-        h2 {
-            margin: 10px 0;
-            color: var(--pi-purple);
-        }
+.logo span{
+color:white;
+font-size:38px;
+font-weight:bold;
+}
 
-        .user-info {
-            font-size: 1.1rem;
-            margin-bottom: 20px;
-            color: #666;
-        }
+h2{
+color:var(--pi-purple);
+margin:10px 0;
+}
 
-        #username {
-            font-weight: bold;
-            color: var(--pi-purple);
-        }
+.user{
+margin-bottom:20px;
+color:#555;
+}
 
-        .price-box {
-            background: #fff9e6;
-            border: 2px solid var(--pi-gold);
-            padding: 15px;
-            border-radius: 15px;
-            margin-bottom: 25px;
-        }
+.price{
+border:2px solid var(--pi-gold);
+background:#fff8e6;
+border-radius:15px;
+padding:15px;
+margin-bottom:25px;
+}
 
-        .amount {
-            font-size: 2.5rem;
-            font-weight: bold;
-            color: #333;
-        }
+.amount{
+font-size:36px;
+font-weight:bold;
+}
 
-        .currency {
-            font-size: 1.2rem;
-            color: var(--pi-gold);
-            font-weight: bold;
-        }
+.currency{
+color:var(--pi-gold);
+font-weight:bold;
+}
 
-        .btn-pay {
-            background: var(--pi-purple);
-            color: white;
-            border: none;
-            padding: 15px 40px;
-            font-size: 1.2rem;
-            border-radius: 50px;
-            cursor: pointer;
-            width: 100%;
-            transition: all 0.3s ease;
-            box-shadow: 0 4px 15px rgba(94, 42, 132, 0.3);
-        }
+button{
+background:var(--pi-purple);
+color:white;
+border:none;
+padding:15px;
+width:100%;
+border-radius:40px;
+font-size:18px;
+cursor:pointer;
+}
 
-        .btn-pay:hover:not(:disabled) {
-            background: #4a1f69;
-            transform: translateY(-2px);
-        }
+button:disabled{
+background:#ccc;
+cursor:not-allowed;
+}
 
-        .btn-pay:disabled {
-            background: #ccc;
-            box-shadow: none;
-            cursor: not-allowed;
-        }
+.status{
+margin-top:15px;
+min-height:20px;
+font-size:14px;
+}
 
-        .status {
-            margin-top: 15px;
-            font-size: 0.9rem;
-            min-height: 20px;
-        }
+.success{color:green}
+.error{color:red}
+</style>
 
-        .success { color: green; }
-        .error { color: red; }
-    </style>
 </head>
+
 <body>
 
-    <div class="payment-card">
-        <div class="pi-logo"><span>π</span></div>
-        
-        <h2>بوابة مدفوعات Pi</h2>
-        
-        <div class="user-info">
-            مرحباً، <span id="username">جاري التعرف عليك...</span>
-        </div>
+<div class="card">
 
-        <div class="price-box">
-            <div class="amount">1.0</div>
-            <div class="currency">Pi Network</div>
-        </div>
+<div class="logo">
+<span>π</span>
+</div>
 
-        <button id="pay-button" class="btn-pay" disabled>تفعيل الدفع</button>
-        
-        <div id="status-msg" class="status"></div>
-    </div>
+<h2>بوابة مدفوعات Pi</h2>
 
-    <script>
-        const Pi = window.Pi;
-        const statusMsg = document.getElementById('status-msg');
-        const payButton = document.getElementById('pay-button');
+<div class="user">
+مرحباً <b id="username">...</b>
+</div>
 
-        // 1. تهيئة الـ SDK (Sandbox False للبيئة الحقيقية)
-        Pi.init({ version: "2.0", sandbox: true });
+<div class="price">
+<div class="amount">1.0</div>
+<div class="currency">Pi Network</div>
+</div>
 
-        // 2. تسجيل الدخول والتعرف على المستخدم
-        async function authenticateUser() {
-            try {
-                const scopes = ['username', 'payments'];
-                const auth = await Pi.authenticate(scopes, onIncompletePaymentFound);
-                
-                document.getElementById('username').innerText = auth.user.username;
-                payButton.disabled = false;
-                showStatus("جاهز لإتمام العملية", "success");
-            } catch (err) {
-                console.error(err);
-                showStatus("فشل الاتصال بـ Pi SDK", "error");
-                document.getElementById('username').innerText = "زائر";
-            }
-        }
+<button id="payBtn" disabled>تفعيل الدفع</button>
 
-        // 3. معالجة المدفوعات العالقة (مهم جداً لسياسة Pi)
-        async function onIncompletePaymentFound(payment) {
-            showStatus("يوجد عملية سابقة معلقة، جاري المعالجة...", "error");
-            // هنا يمكنك إرسال payment.identifier إلى السيرفر لإكمالها
-        }
+<div id="status" class="status"></div>
 
-        // 4. وظيفة الدفع عند الضغط على الزر
-        payButton.addEventListener('click', () => {
-            const paymentData = {
-                amount: 1.0,
-                memo: "شراء منتج تجريبي", // الوصف الذي يظهر للمستخدم
-                metadata: { orderId: "12345" } 
-            };
+</div>
 
-            const callbacks = {
-                onReadyForServerApproval: (paymentId) => {
-                    showStatus("جاري انتظار موافقة السيرفر...", "");
-                    // استدعاء ملف الـ approve الذي أنشأته في Netlify
-                    fetch('/api/pi/approve', {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({ paymentId })
-                    });
-                },
-                onReadyForServerCompletion: (paymentId, txid) => {
-                    showStatus("جاري تأكيد المعاملة على البلوكشين...", "success");
-                    // استدعاء ملف الـ complete الذي أنشأته في Netlify
-                    fetch('/api/pi/complete', {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({ paymentId, txid })
-                    }).then(res => {
-                        if (res.ok) {
-                            showStatus("تمت عملية الدفع بنجاح! شكرًا لك.", "success");
-                            payButton.innerText = "تم الدفع ✅";
-                            payButton.disabled = true;
-                        }
-                    });
-                },
-                onCancel: (paymentId) => {
-                    showStatus("تم إلغاء العملية من قبل المستخدم", "error");
-                },
-                onError: (error, payment) => {
-                    showStatus("حدث خطأ أثناء الدفع", "error");
-                    console.error(error);
-                }
-            };
+<script>
 
-            Pi.createPayment(paymentData, callbacks);
-        });
+const Pi = window.Pi
+const statusBox = document.getElementById("status")
+const usernameBox = document.getElementById("username")
+const payBtn = document.getElementById("payBtn")
 
-        function showStatus(msg, type) {
-            statusMsg.innerText = msg;
-            statusMsg.className = "status " + type;
-        }
+function status(msg,type=""){
+statusBox.innerText=msg
+statusBox.className="status "+type
+}
 
-        // بدء التشغيل
-        authenticateUser();
-    </script>
+/* تهيئة Pi SDK */
+Pi.init({version:"2.0"})
+
+/* تسجيل الدخول */
+async function auth(){
+
+try{
+
+const scopes=['username','payments']
+
+const user=await Pi.authenticate(scopes,incomplete)
+
+usernameBox.innerText=user.user.username
+
+status("تم الاتصال بنجاح","success")
+
+payBtn.disabled=false
+
+}catch(e){
+
+console.error(e)
+
+usernameBox.innerText="زائر"
+
+status("فشل الاتصال بـ Pi SDK","error")
+
+}
+
+}
+
+/* معالجة المدفوعات المعلقة */
+function incomplete(payment){
+
+console.log("Incomplete payment",payment)
+
+}
+
+/* زر الدفع */
+
+payBtn.onclick=function(){
+
+const paymentData={
+amount:1.0,
+memo:"Premium Upgrade",
+metadata:{orderId:"order123"}
+}
+
+const callbacks={
+
+onReadyForServerApproval:function(paymentId){
+
+status("بانتظار موافقة السيرفر")
+
+fetch("/api/approve",{
+method:"POST",
+headers:{"Content-Type":"application/json"},
+body:JSON.stringify({paymentId})
+})
+
+},
+
+onReadyForServerCompletion:function(paymentId,txid){
+
+status("تأكيد المعاملة","success")
+
+fetch("/api/complete",{
+method:"POST",
+headers:{"Content-Type":"application/json"},
+body:JSON.stringify({paymentId,txid})
+}).then(()=>{
+
+status("تم الدفع بنجاح ✅","success")
+
+payBtn.innerText="تم الدفع"
+
+payBtn.disabled=true
+
+})
+
+},
+
+onCancel:function(){
+
+status("تم إلغاء الدفع","error")
+
+},
+
+onError:function(err){
+
+console.error(err)
+
+status("حدث خطأ أثناء الدفع","error")
+
+}
+
+}
+
+Pi.createPayment(paymentData,callbacks)
+
+}
+
+/* بدء التطبيق */
+
+auth()
+
+</script>
+
 </body>
 </html>
