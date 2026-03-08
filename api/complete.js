@@ -1,17 +1,58 @@
+const fetch = require('node-fetch'); // Only if Node < 18
+
 exports.handler = async (event) => {
+  const headers = {
+    'Content-Type': 'application/json',
+    'Access-Control-Allow-Origin': '*', // Configure appropriately for production
+  };
+
+  // Handle OPTIONS for CORS preflight
+  if (event.httpMethod === 'OPTIONS') {
+    return { statusCode: 204, headers, body: '' };
+  }
+
   if (event.httpMethod !== 'POST') {
-    return { statusCode: 405, body: 'Method Not Allowed' };
+    return { 
+      statusCode: 405, 
+      headers,
+      body: JSON.stringify({ error: 'Method Not Allowed' }) 
+    };
   }
-  
-  const { paymentId, txid } = JSON.parse(event.body);
-  
-  if (!paymentId || !txid) {
-    return { statusCode: 400, body: JSON.stringify({ error: 'Missing paymentId or txid' }) };
-  }
-  
+
+  // Validate environment variables
   const PI_SECRET_KEY = process.env.PI_SECRET_KEY;
+  if (!PI_SECRET_KEY) {
+    return { 
+      statusCode: 500, 
+      headers,
+      body: JSON.stringify({ error: 'Server configuration error' }) 
+    };
+  }
+
+  // Parse and validate request body
+  let paymentId, txid;
+  try {
+    const parsed = JSON.parse(event.body);
+    paymentId = parsed.paymentId;
+    txid = parsed.txid;
+  } catch (err) {
+    return { 
+      statusCode: 400, 
+      headers,
+      body: JSON.stringify({ error: 'Invalid JSON body' }) 
+    };
+  }
+
+  if (!paymentId || !txid) {
+    return { 
+      statusCode: 400, 
+      headers,
+      body: JSON.stringify({ error: 'Missing paymentId or txid' }) 
+    };
+  }
+
   const PI_API_BASE = 'https://api.minepi.com/v2';
-  
+
   try {
     const response = await fetch(`${PI_API_BASE}/payments/${paymentId}/complete`, {
       method: 'POST',
@@ -21,15 +62,28 @@ exports.handler = async (event) => {
       },
       body: JSON.stringify({ txid }),
     });
-    
+
+    const data = await response.json();
+
     if (response.ok) {
-      const data = await response.json();
-      return { statusCode: 200, body: JSON.stringify({ completed: true, data }) };
+      return { 
+        statusCode: 200, 
+        headers,
+        body: JSON.stringify({ completed: true, data }) 
+      };
     } else {
-      const error = await response.json();
-      return { statusCode: response.status, body: JSON.stringify({ error }) };
+      return { 
+        statusCode: response.status, 
+        headers,
+        body: JSON.stringify({ error: data }) 
+      };
     }
   } catch (err) {
-    return { statusCode: 500, body: JSON.stringify({ error: err.message }) };
+    console.error('Payment completion error:', err);
+    return { 
+      statusCode: 500, 
+      headers,
+      body: JSON.stringify({ error: 'Internal server error', message: err.message }) 
+    };
   }
 };
