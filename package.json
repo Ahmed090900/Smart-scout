@@ -1,25 +1,10 @@
 {
   "name": "smart-scout",
   "version": "1.0.0",
-  "description": "Smart Scout - AI metasearch with Pi payments",
-  "main": "server.js",
-  "scripts": {
-    "dev": "node server.js",
-    "start": "node server.js"
-  },
-  "dependencies": {
-    "express": "^4.19.2"
-  },
   "engines": {
     "node": "24.x"
   },
-  "vercel": {
-    "builds": [
-      { "src": "api/**/*.js", "use": "@vercel/node" }
-    ],
-    "routes": [
-      { "src": "/api/(.*)", "dest": "/api/$1" },
-      { "src": "/(.*)", "dest": "/" }
-    ]
+  "dependencies": {
+    "@pinetwork-js/sdk": "^2.0.0"
   }
 }
