@@ -1,24 +1,35 @@
-export default async function handler(req, res) {
-  if (req.method !== 'POST') {
-    return res.status(405).json({ error: 'Method not allowed' });
+exports.handler = async (event) => {
+  if (event.httpMethod !== 'POST') {
+    return { statusCode: 405, body: 'Method Not Allowed' };
   }
-
-  const { paymentId, txid } = req.body;
-
+  
+  const { paymentId, txid } = JSON.parse(event.body);
+  
   if (!paymentId || !txid) {
-    return res.status(400).json({ error: 'Missing parameters' });
+    return { statusCode: 400, body: JSON.stringify({ error: 'Missing paymentId or txid' }) };
   }
-
+  
+  const PI_SECRET_KEY = process.env.PI_SECRET_KEY;
+  const PI_API_BASE = 'https://api.minepi.com/v2';
+  
   try {
-    // هنا تسجل الدفع في قاعدة بياناتك، ترسل إيميل، تفتح ميزة مدفوعة، إلخ
-    console.log(`Completing payment: ${paymentId} | TxID: ${txid}`);
-
-    // مثال: حفظ في ملف أو DB
-    // await db.payments.create({ paymentId, txid, amount: 1, status: 'completed' });
-
-    res.status(200).json({ success: true });
-  } catch (error) {
-    console.error(error);
-    res.status(500).json({ error: 'Server error during completion' });
+    const response = await fetch(`${PI_API_BASE}/payments/${paymentId}/complete`, {
+      method: 'POST',
+      headers: {
+        'Authorization': `Key ${PI_SECRET_KEY}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ txid }),
+    });
+    
+    if (response.ok) {
+      const data = await response.json();
+      return { statusCode: 200, body: JSON.stringify({ completed: true, data }) };
+    } else {
+      const error = await response.json();
+      return { statusCode: response.status, body: JSON.stringify({ error }) };
+    }
+  } catch (err) {
+    return { statusCode: 500, body: JSON.stringify({ error: err.message }) };
   }
-}
+};
