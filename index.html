@@ -149,7 +149,7 @@
         const payButton = document.getElementById('pay-button');
 
         // 1. تهيئة الـ SDK (Sandbox False للبيئة الحقيقية)
-        Pi.init({ version: "2.0", sandbox: false });
+        Pi.init({ version: "2.0", sandbox: true });
 
         // 2. تسجيل الدخول والتعرف على المستخدم
         async function authenticateUser() {
