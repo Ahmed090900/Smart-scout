@@ -1,20 +1,13 @@
 {
   "name": "smart-scout",
   "version": "1.0.0",
-  "description": "Smart Scout application for Pi Network Step 10",
   "main": "api/index.js",
   "type": "module",
   "engines": {
     "node": "24.x"
   },
-  "scripts": {
-    "start": "node api/index.js"
-  },
   "dependencies": {
     "express": "^4.21.0",
-    "cors": "^2.8.5",
-    "@pinetwork-js/sdk": "^2.0.0"
-  },
-  "author": "AHMED",
-  "license": "ISC"
+    "cors": "^2.8.5"
+  }
 }
