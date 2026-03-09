@@ -1,13 +1,16 @@
 <!DOCTYPE html>
 <html lang="ar" dir="rtl">
 <head>
+
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
 <title>بوابة مدفوعات Pi</title>
 
 <script src="https://sdk.minepi.com/pi-sdk.js"></script>
 
 <style>
+
 :root{
 --pi-purple:#5e2a84;
 --pi-gold:#ffa500;
@@ -103,6 +106,7 @@ font-size:14px;
 
 .success{color:green}
 .error{color:red}
+
 </style>
 
 </head>
@@ -140,27 +144,42 @@ const usernameBox = document.getElementById("username")
 const payBtn = document.getElementById("payBtn")
 
 function status(msg,type=""){
-statusBox.innerText=msg
-statusBox.className="status "+type
+statusBox.innerText = msg
+statusBox.className = "status " + type
 }
 
 /* تهيئة Pi SDK */
-Pi.init({version:"2.0"})
+
+Pi.init({
+version:"2.0",
+sandbox:true
+})
+
+/* معالجة المدفوعات المعلقة */
+
+function incomplete(payment){
+
+console.log("Incomplete payment",payment)
+
+}
 
 /* تسجيل الدخول */
+
 async function auth(){
 
 try{
 
-const scopes=['username','payments']
+const scopes = ['username','payments']
 
-const user=await Pi.authenticate(scopes,incomplete)
+const user = await Pi.authenticate(scopes,{
+onIncompletePaymentFound: incomplete
+})
 
-usernameBox.innerText=user.user.username
+usernameBox.innerText = user.user.username
 
 status("تم الاتصال بنجاح","success")
 
-payBtn.disabled=false
+payBtn.disabled = false
 
 }catch(e){
 
@@ -174,24 +193,17 @@ status("فشل الاتصال بـ Pi SDK","error")
 
 }
 
-/* معالجة المدفوعات المعلقة */
-function incomplete(payment){
-
-console.log("Incomplete payment",payment)
-
-}
-
 /* زر الدفع */
 
-payBtn.onclick=function(){
+payBtn.onclick = function(){
 
-const paymentData={
+const paymentData = {
 amount:1.0,
 memo:"Premium Upgrade",
 metadata:{orderId:"order123"}
 }
 
-const callbacks={
+const callbacks = {
 
 onReadyForServerApproval:function(paymentId){
 
@@ -199,21 +211,26 @@ status("بانتظار موافقة السيرفر")
 
 fetch("/api/approve",{
 method:"POST",
-headers:{"Content-Type":"application/json"},
+headers:{
+"Content-Type":"application/json"
+},
 body:JSON.stringify({paymentId})
 })
 
 },
 
-onReadyForServerCompletion:function(paymentId,txid){
+onReadyForServerCompletion:function(paymentId){
 
-status("تأكيد المعاملة","success")
+status("تأكيد المعاملة")
 
 fetch("/api/complete",{
 method:"POST",
-headers:{"Content-Type":"application/json"},
-body:JSON.stringify({paymentId,txid})
-}).then(()=>{
+headers:{
+"Content-Type":"application/json"
+},
+body:JSON.stringify({paymentId})
+})
+.then(()=>{
 
 status("تم الدفع بنجاح ✅","success")
 
