@@ -1,27 +1,39 @@
 export default async function handler(req, res) {
 
-  const API_KEY = "usqgwegrliqtohsifyholnutf1cggxdmgpfyyr31uhfj4noemwfyibkgm2pnwfsy";
-  const { paymentId } = req.body;
+if (req.method !== "POST") {
+return res.status(405).json({ error: "Method not allowed" });
+}
 
-  try {
+try {
 
-    const response = await fetch(
-      `https://api.minepi.com/v2/payments/${paymentId}/approve`,
-      {
-        method: "POST",
-        headers: {
-          Authorization: `Key ${API_KEY}`,
-          "Content-Type": "application/json"
-        }
-      }
-    );
+const { paymentId } = req.body;
 
-    const data = await response.json();
+const apiKey = process.env.PI_API_KEY;
 
-    res.status(200).json(data);
+const response = await fetch(
+`https://api.minepi.com/v2/payments/${paymentId}/approve`,
+{
+method: "POST",
+headers: {
+Authorization: `Key ${apiKey}`,
+"Content-Type": "application/json"
+}
+}
+);
 
-  } catch (error) {
-    res.status(500).json({ error: error.toString() });
-  }
+const data = await response.json();
+
+return res.status(200).json(data);
+
+} catch (error) {
+
+console.error(error);
+
+return res.status(500).json({
+error: "Approval failed",
+details: error.message
+});
+
+}
 
 }
