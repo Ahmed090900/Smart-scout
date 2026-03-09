@@ -6,21 +6,15 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-<title>بوابة مدفوعات Pi</title>
+<title>Smart Scout - Pi Payment</title>
 
 <script src="https://sdk.minepi.com/pi-sdk.js"></script>
 
 <style>
 
-:root{
---pi-purple:#5e2a84;
---pi-gold:#ffa500;
---bg:#f2f4f8;
-}
-
 body{
-font-family:Tahoma,Arial;
-background:var(--bg);
+font-family:Arial;
+background:#f3f4f8;
 display:flex;
 justify-content:center;
 align-items:center;
@@ -33,15 +27,15 @@ background:white;
 width:380px;
 padding:30px;
 border-radius:20px;
-box-shadow:0 10px 30px rgba(0,0,0,.1);
 text-align:center;
+box-shadow:0 10px 25px rgba(0,0,0,0.1);
 }
 
 .logo{
 width:70px;
 height:70px;
+background:#5e2a84;
 border-radius:50%;
-background:var(--pi-purple);
 display:flex;
 align-items:center;
 justify-content:center;
@@ -51,63 +45,45 @@ margin-bottom:20px;
 
 .logo span{
 color:white;
-font-size:38px;
-font-weight:bold;
+font-size:36px;
 }
 
 h2{
-color:var(--pi-purple);
-margin:10px 0;
-}
-
-.user{
-margin-bottom:20px;
-color:#555;
+color:#5e2a84;
 }
 
 .price{
-border:2px solid var(--pi-gold);
-background:#fff8e6;
+border:2px solid #f5a623;
 border-radius:15px;
 padding:15px;
-margin-bottom:25px;
+margin:20px 0;
 }
 
 .amount{
-font-size:36px;
-font-weight:bold;
-}
-
-.currency{
-color:var(--pi-gold);
+font-size:34px;
 font-weight:bold;
 }
 
 button{
-background:var(--pi-purple);
-color:white;
-border:none;
-padding:15px;
 width:100%;
+padding:15px;
+border:none;
 border-radius:40px;
 font-size:18px;
 cursor:pointer;
 margin-top:10px;
+background:#5e2a84;
+color:white;
 }
 
 button:disabled{
 background:#ccc;
-cursor:not-allowed;
 }
 
 .status{
 margin-top:15px;
 min-height:20px;
-font-size:14px;
 }
-
-.success{color:green}
-.error{color:red}
 
 </style>
 
@@ -121,15 +97,12 @@ font-size:14px;
 <span>π</span>
 </div>
 
-<h2>بوابة مدفوعات Pi</h2>
+<h2>Smart Scout</h2>
 
-<div class="user">
-مرحباً <b id="username">زائر</b>
-</div>
+<p>مرحباً <b id="username">زائر</b></p>
 
 <div class="price">
-<div class="amount">1.0</div>
-<div class="currency">Pi Network</div>
+<div class="amount">1 Pi</div>
 </div>
 
 <button id="loginBtn">تسجيل الدخول بمحفظة Pi</button>
@@ -144,78 +117,84 @@ font-size:14px;
 
 const Pi = window.Pi
 
-const statusBox = document.getElementById("status")
-const usernameBox = document.getElementById("username")
-
-const loginBtn = document.getElementById("loginBtn")
-const payBtn = document.getElementById("payBtn")
-
-function status(msg,type=""){
-statusBox.innerText = msg
-statusBox.className = "status " + type
-}
-
-/* تشغيل Pi SDK */
-
 Pi.init({
 version:"2.0",
 sandbox:true
 })
 
+const loginBtn = document.getElementById("loginBtn")
+const payBtn = document.getElementById("payBtn")
+const usernameBox = document.getElementById("username")
+const statusBox = document.getElementById("status")
+
+function status(text){
+statusBox.innerText = text
+}
+
 let currentUser = null
 
-/* تسجيل الدخول بمحفظة Pi */
+/* تسجيل الدخول */
 
 loginBtn.onclick = async function(){
 
 try{
 
-status("جارى الاتصال بمحفظة Pi...")
+status("جارى تسجيل الدخول...")
 
-const scopes = ['username','payments']
+const auth = await Pi.authenticate(['username','payments'],{
 
-const auth = await Pi.authenticate(scopes,{
-onIncompletePaymentFound: payment => {
-console.log("Incomplete payment",payment)
+onIncompletePaymentFound: async payment => {
+
+console.log("pending payment",payment)
+
+await fetch("/api/complete",{
+method:"POST",
+headers:{
+"Content-Type":"application/json"
+},
+body:JSON.stringify({
+paymentId: payment.identifier
+})
+})
+
 }
+
 })
 
 currentUser = auth.user
 
 usernameBox.innerText = currentUser.username
 
-status("تم تسجيل الدخول بنجاح","success")
+status("تم تسجيل الدخول بنجاح")
 
 loginBtn.disabled = true
-loginBtn.innerText = "تم تسجيل الدخول"
-
 payBtn.disabled = false
 
 }catch(e){
 
 console.error(e)
-
-status("فشل تسجيل الدخول بمحفظة Pi","error")
-
-}
+status("فشل تسجيل الدخول")
 
 }
 
-/* زر الدفع */
+}
+
+
+/* الدفع */
 
 payBtn.onclick = function(){
 
 const paymentData = {
-amount:1.0,
-memo:"Smart Scout Premium",
-metadata:{orderId:"order123"}
+amount:1,
+memo:"Smart Scout Payment",
+metadata:{orderId:"order1"}
 }
 
 const callbacks = {
 
 onReadyForServerApproval:function(paymentId){
 
-status("بانتظار موافقة السيرفر")
+status("جاري الموافقة على الدفع")
 
 fetch("/api/approve",{
 method:"POST",
@@ -229,7 +208,7 @@ body:JSON.stringify({paymentId})
 
 onReadyForServerCompletion:function(paymentId){
 
-status("تأكيد المعاملة")
+status("جاري إكمال الدفع")
 
 fetch("/api/complete",{
 method:"POST",
@@ -240,10 +219,10 @@ body:JSON.stringify({paymentId})
 })
 .then(()=>{
 
-status("تم الدفع بنجاح ✅","success")
+status("تم الدفع بنجاح")
 
+payBtn.disabled = true
 payBtn.innerText="تم الدفع"
-payBtn.disabled=true
 
 })
 
@@ -251,7 +230,7 @@ payBtn.disabled=true
 
 onCancel:function(){
 
-status("تم إلغاء الدفع","error")
+status("تم إلغاء الدفع")
 
 },
 
@@ -259,7 +238,7 @@ onError:function(err){
 
 console.error(err)
 
-status("حدث خطأ أثناء الدفع","error")
+status("حدث خطأ أثناء الدفع")
 
 }
 
