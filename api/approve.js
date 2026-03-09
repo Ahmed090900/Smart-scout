@@ -1,38 +1,48 @@
 export default async function handler(req, res) {
 
-if (req.method !== "POST") {
-return res.status(405).json({ error: "Method not allowed" });
-}
-
 try {
 
-const { paymentId } = req.body;
+console.log("BODY:", req.body)
 
-const apiKey = process.env.PI_API_KEY;
+if(req.method !== "POST"){
+return res.status(405).json({message:"POST only"})
+}
+
+const apiKey = process.env.PI_API_KEY
+
+if(!apiKey){
+return res.status(500).json({error:"API KEY NOT FOUND"})
+}
+
+const { paymentId } = req.body || {}
+
+if(!paymentId){
+return res.status(400).json({error:"paymentId missing"})
+}
 
 const response = await fetch(
 `https://api.minepi.com/v2/payments/${paymentId}/approve`,
 {
-method: "POST",
-headers: {
-Authorization: `Key ${apiKey}`,
-"Content-Type": "application/json"
+method:"POST",
+headers:{
+Authorization:`Key ${apiKey}`,
+"Content-Type":"application/json"
 }
 }
-);
+)
 
-const data = await response.json();
+const data = await response.json()
 
-return res.status(200).json(data);
+return res.status(200).json(data)
 
-} catch (error) {
+}catch(error){
 
-console.error(error);
+console.error("SERVER ERROR:",error)
 
 return res.status(500).json({
-error: "Approval failed",
-details: error.message
-});
+error:error.message,
+stack:error.stack
+})
 
 }
 
