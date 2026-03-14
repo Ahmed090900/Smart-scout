@@ -46,7 +46,7 @@ export default async function handler(req, res) {
 
     // اللي بيحصل غالبًا: redirect لصفحة شكر / نجاح
     // ممكن تضيف query params عشان تعرض رسالة مخصصة
-    const redirectUrl = `/thank-you?paymentId=\( {paymentId}&status= \){status}&order=${orderId || ''}`;
+    const redirectUrl = `/thank-you?paymentId=${paymentId}&status=${status}&order=${orderId || ''}`;
     
     return res.redirect(303, redirectUrl);
     // أو لو عايز JSON (نادر في redirect بعد دفع):
