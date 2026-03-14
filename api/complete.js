@@ -2,22 +2,19 @@ import fetch from "node-fetch";
 
 export default async function handler(req, res) {
 
-try {
-
 if (req.method !== "POST") {
-return res.status(200).json({ message: "POST only" });
+return res.status(200).send("POST only");
 }
+
+try {
 
 const apiKey = process.env.PI_API_KEY;
 
-if (!apiKey) {
-return res.status(500).json({ error: "API KEY missing" });
-}
-
-const { paymentId } = req.body || {};
+const body = req.body || {};
+const paymentId = body.paymentId;
 
 if (!paymentId) {
-return res.status(400).json({ error: "paymentId required" });
+return res.status(400).json({ error: "paymentId missing" });
 }
 
 const response = await fetch(
