@@ -2,42 +2,51 @@ import fetch from "node-fetch";
 
 export default async function handler(req, res) {
 
-if (req.method !== "POST") {
-return res.status(200).send("POST only");
-}
+  // السماح فقط بطلب POST
+  if (req.method !== "POST") {
+    return res.status(200).send("POST only");
+  }
 
-try {
+  try {
 
-const apiKey = process.env.PI_API_KEY;
+    const apiKey = process.env.PI_API_KEY;
 
-const body = req.body || {};
-const paymentId = body.paymentId;
+    if (!apiKey) {
+      return res.status(500).json({
+        error: "Missing PI_API_KEY"
+      });
+    }
 
-if (!paymentId) {
-return res.status(400).json({ error: "paymentId missing" });
-}
+    // تأمين قراءة البودي
+    const body = req.body ? req.body : {};
+    const paymentId = body.paymentId;
 
-const response = await fetch(
-`https://api.minepi.com/v2/payments/${paymentId}/complete`,
-{
-method: "POST",
-headers: {
-Authorization: `Key ${apiKey}`,
-"Content-Type": "application/json"
-}
-}
-);
+    if (!paymentId) {
+      return res.status(400).json({
+        error: "paymentId missing"
+      });
+    }
 
-const data = await response.json();
+    const response = await fetch(
+      `https://api.minepi.com/v2/payments/${paymentId}/complete`,
+      {
+        method: "POST",
+        headers: {
+          Authorization: `Key ${apiKey}`,
+          "Content-Type": "application/json"
+        }
+      }
+    );
 
-return res.status(200).json(data);
+    const data = await response.json();
 
-} catch (error) {
+    return res.status(200).json(data);
 
-return res.status(500).json({
-error: error.message
-});
+  } catch (error) {
 
-}
+    return res.status(500).json({
+      error: error.message
+    });
 
+  }
 }
