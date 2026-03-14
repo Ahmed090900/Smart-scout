@@ -1,18 +1,59 @@
 <!DOCTYPE html>
 <html>
 <head>
+<meta charset="UTF-8">
 <title>Smart Scout</title>
 
 <script src="https://sdk.minepi.com/pi-sdk.js"></script>
 
+<style>
+body{
+font-family:Arial;
+background:#0f172a;
+color:white;
+text-align:center;
+padding-top:100px;
+}
+
+button{
+background:#7c3aed;
+color:white;
+border:none;
+padding:15px 30px;
+font-size:18px;
+border-radius:8px;
+cursor:pointer;
+margin:10px;
+}
+
+button:hover{
+background:#6d28d9;
+}
+</style>
+</head>
+
+<body>
+
+<h1>Smart Scout</h1>
+
+<button id="login">Login with Pi</button>
+<br>
+<button id="pay" style="display:none;">Pay 1 Pi</button>
+
 <script>
-Pi.init({ version: "2.0", sandbox: true });
 
-let authResult;
+Pi.init({
+version: "2.0",
+sandbox: true
+});
 
-async function login() {
+let currentUser = null;
 
-authResult = await Pi.authenticate(
+document.getElementById("login").onclick = async () => {
+
+try {
+
+const auth = await Pi.authenticate(
 ['username','payments'],
 {
 onIncompletePaymentFound: async payment => {
@@ -23,43 +64,54 @@ headers:{
 "Content-Type":"application/json"
 },
 body:JSON.stringify({
-paymentId: payment.identifier,
-txid: payment.transaction?.txid
+paymentId: payment.identifier
 })
-})
+});
 
 }
 }
-)
+);
 
-document.getElementById("user").innerText =
-"Welcome " + authResult.user.username;
+currentUser = auth.user;
+
+alert("Welcome " + currentUser.username);
+
+document.getElementById("pay").style.display="inline-block";
+
+} catch(e){
+
+console.log(e);
+alert("Login failed");
 
 }
 
-function pay(){
+};
 
-Pi.createPayment(
-{
+document.getElementById("pay").onclick = async () => {
+
+const paymentData = {
 amount: 1,
 memo: "Smart Scout Payment",
-metadata: { product: "upgrade" }
-},
+metadata: {productId:"smartscout"}
+};
 
-{
-onReadyForServerApproval: async (paymentId) => {
+const callbacks = {
+
+onReadyForServerApproval: async paymentId => {
 
 await fetch("/api/approve",{
 method:"POST",
 headers:{
 "Content-Type":"application/json"
 },
-body:JSON.stringify({ paymentId })
+body:JSON.stringify({
+paymentId:paymentId
 })
+});
 
 },
 
-onReadyForServerCompletion: async (paymentId, txid) => {
+onReadyForServerCompletion: async paymentId => {
 
 await fetch("/api/complete",{
 method:"POST",
@@ -67,47 +119,31 @@ headers:{
 "Content-Type":"application/json"
 },
 body:JSON.stringify({
-paymentId,
-txid
+paymentId:paymentId
 })
-})
+});
 
 },
 
-onCancel: (paymentId) => {
+onCancel: paymentId => {
+
 alert("Payment cancelled");
+
 },
 
-onError: (error) => {
-console.error(error);
-alert("Payment error");
-}
+onError: error => {
+
+console.log(error);
 
 }
 
-)
+};
 
-}
+Pi.createPayment(paymentData, callbacks);
+
+};
 
 </script>
-
-</head>
-
-<body>
-
-<h2>Smart Scout</h2>
-
-<button onclick="login()">
-Login with Pi
-</button>
-
-<p id="user"></p>
-
-<br>
-
-<button onclick="pay()">
-Pay 1 Pi
-</button>
 
 </body>
 </html>
