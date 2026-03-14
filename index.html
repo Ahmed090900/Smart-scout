@@ -1,8 +1,125 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+
+<head>
+
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+<title>Smart Scout - Pi Payment</title>
+
+<script src="https://sdk.minepi.com/pi-sdk.js"></script>
+
+<style>
+
+body{
+font-family:Arial;
+background:#f3f4f8;
+display:flex;
+justify-content:center;
+align-items:center;
+height:100vh;
+margin:0;
+}
+
+.card{
+background:white;
+width:380px;
+padding:30px;
+border-radius:20px;
+text-align:center;
+box-shadow:0 10px 25px rgba(0,0,0,0.1);
+}
+
+.logo{
+width:70px;
+height:70px;
+background:#5e2a84;
+border-radius:50%;
+display:flex;
+align-items:center;
+justify-content:center;
+margin:auto;
+margin-bottom:20px;
+}
+
+.logo span{
+color:white;
+font-size:36px;
+}
+
+h2{
+color:#5e2a84;
+}
+
+.price{
+border:2px solid #f5a623;
+border-radius:15px;
+padding:15px;
+margin:20px 0;
+}
+
+.amount{
+font-size:34px;
+font-weight:bold;
+}
+
+button{
+width:100%;
+padding:15px;
+border:none;
+border-radius:40px;
+font-size:18px;
+cursor:pointer;
+margin-top:10px;
+background:#5e2a84;
+color:white;
+}
+
+button:disabled{
+background:#ccc;
+}
+
+.status{
+margin-top:15px;
+min-height:20px;
+}
+
+</style>
+
+</head>
+
+<body>
+
+<div class="card">
+
+<div class="logo">
+<span>π</span>
+</div>
+
+<h2>Smart Scout</h2>
+
+<p>مرحباً <b id="username">زائر</b></p>
+
+<div class="price">
+<div class="amount">1 Pi</div>
+</div>
+
+<button id="loginBtn">تسجيل الدخول بمحفظة Pi</button>
+
+<button id="payBtn" disabled>الدفع باستخدام Pi</button>
+
+<div id="status" class="status"></div>
+
+</div>
+
+<script>
+
 const Pi = window.Pi;
 
 Pi.init({
-  version: "2.0",
-  sandbox: true
+version:"2.0",
+sandbox:true
 });
 
 const loginBtn = document.getElementById("loginBtn");
@@ -11,50 +128,126 @@ const usernameBox = document.getElementById("username");
 const statusBox = document.getElementById("status");
 
 function status(text){
-  statusBox.innerText = text;
+statusBox.innerText = text;
 }
 
 let currentUser = null;
 
+/* تسجيل الدخول */
+
 loginBtn.addEventListener("click", async () => {
 
-  try{
+try{
 
-    status("Logging in...");
+status("جاري تسجيل الدخول...");
 
-    const auth = await Pi.authenticate(
-      ["username","payments"],
-      {
-        onIncompletePaymentFound: async payment => {
+const auth = await Pi.authenticate(
+["username","payments"],
+{
+onIncompletePaymentFound: async payment => {
 
-          await fetch("/api/complete",{
-            method:"POST",
-            headers:{
-              "Content-Type":"application/json"
-            },
-            body:JSON.stringify({
-              paymentId: payment.identifier
-            })
-          });
+console.log("Pending payment found",payment);
 
-        }
-      }
-    );
+await fetch("/api/complete",{
+method:"POST",
+headers:{
+"Content-Type":"application/json"
+},
+body:JSON.stringify({
+paymentId: payment.identifier
+})
+});
 
-    currentUser = auth.user;
+}
+}
+);
 
-    usernameBox.innerText = currentUser.username;
+currentUser = auth.user;
 
-    loginBtn.disabled = true;
-    payBtn.disabled = false;
+usernameBox.innerText = currentUser.username;
 
-    status("Login successful");
+loginBtn.disabled = true;
+payBtn.disabled = false;
 
-  }catch(err){
+status("تم تسجيل الدخول بنجاح");
 
-    console.error(err);
-    status("Login failed");
+}catch(err){
 
-  }
+console.error(err);
+status("فشل تسجيل الدخول");
+
+}
 
 });
+
+
+/* الدفع */
+
+payBtn.addEventListener("click", () => {
+
+const paymentData = {
+amount:1,
+memo:"Smart Scout Payment",
+metadata:{orderId:"order1"}
+};
+
+const callbacks = {
+
+onReadyForServerApproval: async function(paymentId){
+
+status("جاري الموافقة على الدفع");
+
+await fetch("/api/approve",{
+method:"POST",
+headers:{
+"Content-Type":"application/json"
+},
+body:JSON.stringify({paymentId})
+});
+
+},
+
+onReadyForServerCompletion: async function(paymentId){
+
+status("جاري إكمال الدفع");
+
+await fetch("/api/complete",{
+method:"POST",
+headers:{
+"Content-Type":"application/json"
+},
+body:JSON.stringify({paymentId})
+});
+
+status("تم الدفع بنجاح");
+
+payBtn.disabled = true;
+payBtn.innerText="تم الدفع";
+
+},
+
+onCancel:function(){
+
+status("تم إلغاء الدفع");
+
+},
+
+onError:function(err){
+
+console.error(err);
+
+status("حدث خطأ أثناء الدفع");
+
+}
+
+};
+
+Pi.createPayment(paymentData,callbacks);
+
+});
+
+</script>
+
+</body>
+
+</html>
