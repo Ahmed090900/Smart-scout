@@ -140,6 +140,49 @@ loginBtn.onclick = async function(){
 
 try{
 
+status("جارى تسجيل الدخول...")
+
+const auth = await Pi.authenticate(['username','payments'],{
+
+onIncompletePaymentFound: async payment => {
+
+console.log("pending payment found", payment)
+
+await fetch("/api/complete",{
+method:"POST",
+headers:{
+"Content-Type":"application/json"
+},
+body:JSON.stringify({
+paymentId: payment.identifier
+})
+})
+
+}
+
+})
+
+currentUser = auth.user
+
+usernameBox.innerText = currentUser.username
+
+status("تم تسجيل الدخول بنجاح")
+
+loginBtn.disabled = true
+payBtn.disabled = false
+
+}catch(e){
+
+console.error(e)
+
+status("فشل تسجيل الدخول")
+
+}
+
+}
+
+try{
+
 status("جارى تسجيل الدخول...");
 
 const auth = await Pi.authenticate(
