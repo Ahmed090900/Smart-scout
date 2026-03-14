@@ -1,16 +1,7 @@
 {
-  "routes": [
-    {
-      "src": "/api/pi/approve",
-      "dest": "/api/approve.js"
-    },
-    {
-      "src": "/api/pi/complete",
-      "dest": "/api/complete.js"
-    },
-    {
-      "src": "/api/check-auth",
-      "dest": "/api/check-auth.js"
-    }
-  ]
+"functions":{
+"api/*.js":{
+"runtime":"nodejs18.x"
+}
+}
 }
