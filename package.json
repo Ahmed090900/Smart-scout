@@ -2,10 +2,8 @@
   "name": "pi-payment-app",
   "version": "2.0.0",
   "private": true,
-  "type": "module"
-  {
- "dependencies": {
-  "node-fetch": "^2.6.7"
- }
-}
+  "type": "module",
+  "dependencies": {
+    "node-fetch": "^2.6.7"
+  }
 }
