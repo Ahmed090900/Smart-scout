@@ -115,23 +115,24 @@ min-height:20px;
 
 <script>
 
-const Pi = window.Pi
+const Pi = window.Pi;
 
 Pi.init({
-version:"2.0",
-sandbox:true
-})
+  version: "2.0",
+  sandbox: true
+});
 
-const loginBtn = document.getElementById("loginBtn")
-const payBtn = document.getElementById("payBtn")
-const usernameBox = document.getElementById("username")
-const statusBox = document.getElementById("status")
+const loginBtn = document.getElementById("loginBtn");
+const payBtn = document.getElementById("payBtn");
+const usernameBox = document.getElementById("username");
+const statusBox = document.getElementById("status");
 
 function status(text){
-statusBox.innerText = text
+  statusBox.innerText = text;
 }
 
-let currentUser = null
+let currentUser = null;
+
 
 /* تسجيل الدخول */
 
@@ -139,13 +140,14 @@ loginBtn.onclick = async function(){
 
 try{
 
-status("جارى تسجيل الدخول...")
+status("جارى تسجيل الدخول...");
 
-const auth = await Pi.authenticate(['username','payments'],{
-
+const auth = await Pi.authenticate(
+['username','payments'],
+{
 onIncompletePaymentFound: async payment => {
 
-console.log("pending payment",payment)
+console.log("pending payment",payment.identifier);
 
 await fetch("/api/complete",{
 method:"POST",
@@ -153,31 +155,33 @@ headers:{
 "Content-Type":"application/json"
 },
 body:JSON.stringify({
-paymentId: payment.identifier
+paymentId:payment.identifier
 })
-})
+});
 
 }
+}
+);
 
-})
+currentUser = auth.user;
 
-currentUser = auth.user
+usernameBox.innerText = currentUser.username;
 
-usernameBox.innerText = currentUser.username
+status("تم تسجيل الدخول بنجاح");
 
-status("تم تسجيل الدخول بنجاح")
-
-loginBtn.disabled = true
-payBtn.disabled = false
+loginBtn.disabled = true;
+payBtn.disabled = false;
 
 }catch(e){
 
-console.error(e)
-status("فشل تسجيل الدخول")
+console.error(e);
+
+status("فشل تسجيل الدخول");
 
 }
 
-}
+};
+
 
 
 /* الدفع */
@@ -188,65 +192,62 @@ const paymentData = {
 amount:1,
 memo:"Smart Scout Payment",
 metadata:{orderId:"order1"}
-}
+};
 
 const callbacks = {
 
-onReadyForServerApproval:function(paymentId){
+onReadyForServerApproval: async function(paymentId){
 
-status("جاري الموافقة على الدفع")
+status("جاري الموافقة على الدفع");
 
-fetch("/api/approve",{
+await fetch("/api/approve",{
 method:"POST",
 headers:{
 "Content-Type":"application/json"
 },
 body:JSON.stringify({paymentId})
-})
+});
 
 },
 
-onReadyForServerCompletion:function(paymentId){
+onReadyForServerCompletion: async function(paymentId){
 
-status("جاري إكمال الدفع")
+status("جاري إكمال الدفع");
 
-fetch("/api/complete",{
+await fetch("/api/complete",{
 method:"POST",
 headers:{
 "Content-Type":"application/json"
 },
 body:JSON.stringify({paymentId})
-})
-.then(()=>{
+});
 
-status("تم الدفع بنجاح")
+status("تم الدفع بنجاح");
 
-payBtn.disabled = true
-payBtn.innerText="تم الدفع"
-
-})
+payBtn.disabled = true;
+payBtn.innerText="تم الدفع";
 
 },
 
 onCancel:function(){
 
-status("تم إلغاء الدفع")
+status("تم إلغاء الدفع");
 
 },
 
 onError:function(err){
 
-console.error(err)
+console.error(err);
 
-status("حدث خطأ أثناء الدفع")
-
-}
+status("حدث خطأ أثناء الدفع");
 
 }
 
-Pi.createPayment(paymentData,callbacks)
+};
 
-}
+Pi.createPayment(paymentData,callbacks);
+
+};
 
 </script>
 
