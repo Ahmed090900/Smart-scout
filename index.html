@@ -121,7 +121,6 @@
     <div class="pi-icon">π</div>
     <div class="logo">Smart Scout</div>
 
-    <!-- معلومات المستخدم بعد الربط -->
     <div class="user-info" id="userInfo">
         مرحباً، <span id="username" style="color:#8b5cf6; font-weight:600;"></span> 👋
     </div>
@@ -130,23 +129,19 @@
         المبلغ: <b>1 π</b>
     </div>
 
-    <!-- زر الربط -->
     <button id="loginBtn" onclick="loginWithPi()">ربط المحفظة (Login with Pi)</button>
 
-    <!-- زر الدفع (يظهر بعد الربط) -->
     <button id="payBtn" onclick="pay()" style="display:none;">ادفع 1 π الآن</button>
 
     <div class="status" id="status">جاهز للربط...</div>
 </div>
 
 <script>
-    // ====================== تهيئة الـ SDK (Testnet) ======================
-    Pi.init({ version: "2.0", sandbox: true });   // ← Testnet مفعل
+    Pi.init({ version: "2.0", sandbox: true });
 
     let currentUser = null;
     let accessToken = null;
 
-    // ====================== ربط المحفظة ======================
     async function loginWithPi() {
         const statusEl = document.getElementById("status");
         const loginBtn = document.getElementById("loginBtn");
@@ -158,39 +153,29 @@
 
         try {
             const authResult = await Pi.authenticate(
-                ['username', 'payments'],   // صلاحيات مطلوبة للدفع
+                ['username', 'payments'],
                 async (incompletePayment) => {
-                    // التعامل مع المدفوعات غير المكتملة
                     statusEl.innerText = "إكمال دفع سابق...";
-                    await fetch("/api/complete", {
-                        method: "POST",
-                        headers: { "Content-Type": "application/json" },
-                        body: JSON.stringify({ ...incompletePayment, accessToken })
-                    });
-                    statusEl.innerText = "تم إكمال الدفع السابق ✅";
+                    // يمكن إضافة استدعاء complete هنا لو لزم
                 }
             );
 
             currentUser = authResult.user;
             accessToken = authResult.accessToken;
 
-            // تحديث الواجهة
             usernameEl.textContent = currentUser.username || "Pioneer";
             userInfo.style.display = "block";
             loginBtn.style.display = "none";
             payBtn.style.display = "block";
 
             statusEl.innerHTML = 'تم ربط المحفظة بنجاح <span style="color:#22c55e">✅</span>';
-
-            console.log("✅ User authenticated:", currentUser);
-
+            console.log("User:", currentUser);
         } catch (error) {
-            console.error(error);
-            statusEl.innerHTML = 'فشل الربط ⚠️<br>تأكد أنك داخل Pi Browser';
+            console.error("Login error:", error);
+            statusEl.innerHTML = 'فشل الربط ⚠️<br>تأكد من Pi Browser';
         }
     }
 
-    // ====================== الدفع الحقيقي ======================
     async function pay() {
         const statusEl = document.getElementById("status");
 
@@ -207,40 +192,66 @@
             metadata: { orderId: "SS-001", service: "Premium Access" }
         }, {
             onReadyForServerApproval: async (paymentId) => {
+                console.log("onReadyForServerApproval called - paymentId:", paymentId);
                 statusEl.innerHTML = 'جاري الموافقة من السيرفر<span class="spinner"></span>';
-                await fetch("/api/approve", {
-                    method: "POST",
-                    headers: { "Content-Type": "application/json" },
-                    body: JSON.stringify({ paymentId, accessToken })
-                });
+
+                try {
+                    const res = await fetch("https://smart-scout-ten.vercel.app/api/approve", {
+                        method: "POST",
+                        headers: { "Content-Type": "application/json" },
+                        body: JSON.stringify({ paymentId })
+                    });
+
+                    if (!res.ok) {
+                        throw new Error(`Approval failed: ${res.status} - ${await res.text()}`);
+                    }
+
+                    console.log("Approval success");
+                    statusEl.innerHTML = 'تمت الموافقة... جاري الإكمال';
+                } catch (err) {
+                    console.error("Approval error:", err);
+                    statusEl.innerHTML = `خطأ في الموافقة: ${err.message} ⚠️`;
+                }
             },
 
             onReadyForServerCompletion: async (paymentId, txid) => {
+                console.log("onReadyForServerCompletion - paymentId:", paymentId, "txid:", txid);
                 statusEl.innerHTML = 'جاري إكمال الدفع<span class="spinner"></span>';
-                await fetch("/api/complete", {
-                    method: "POST",
-                    headers: { "Content-Type": "application/json" },
-                    body: JSON.stringify({ paymentId, txid, accessToken })
-                });
-                statusEl.innerHTML = '✅ تم الدفع بنجاح!<br>شكراً لك';
-                document.getElementById("payBtn").innerText = "تم الدفع ✓";
+
+                try {
+                    const res = await fetch("https://smart-scout-ten.vercel.app/api/complete", {
+                        method: "POST",
+                        headers: { "Content-Type": "application/json" },
+                        body: JSON.stringify({ paymentId, txid })
+                    });
+
+                    if (!res.ok) {
+                        throw new Error(`Completion failed: ${res.status} - ${await res.text()}`);
+                    }
+
+                    console.log("Completion success");
+                    statusEl.innerHTML = '✅ تم الدفع بنجاح!<br>شكراً لك';
+                    document.getElementById("payBtn").innerText = "تم الدفع ✓";
+                } catch (err) {
+                    console.error("Completion error:", err);
+                    statusEl.innerHTML = `خطأ في الإكمال: ${err.message} ⚠️`;
+                }
             },
 
             onCancel: (paymentId) => {
+                console.log("Payment cancelled:", paymentId);
                 statusEl.innerHTML = '❌ تم إلغاء الدفع';
             },
 
             onError: (error) => {
-                console.error(error);
-                statusEl.innerHTML = '⚠️ خطأ في الدفع<br>جرب مرة أخرى';
+                console.error("Pi SDK Error:", error);
+                statusEl.innerHTML = `⚠️ خطأ في الدفع: ${error.message || 'غير معروف'}`;
             }
         });
     }
 
-    // ====================== تلقائي: محاولة الربط عند التحميل ======================
     window.onload = () => {
-        // يمكنك إزالة هذا السطر إذا أردت زر يدوي فقط
-        // loginWithPi();
+        // loginWithPi();   // لو عايز الربط تلقائي، شيل التعليق
     };
 </script>
 
