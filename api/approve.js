@@ -19,7 +19,7 @@ export default async function handler(req, res) {
     return res.status(400).json({ error: 'paymentId is required' });
   }
 
-  const apiKey = process.env.PI_SERVER_API_KEY || process.env.SERVER_API_KEY;
+  const apiKey = process.env.PI_API_KEY || process.env.PI_API_KEY;
 
   if (!apiKey) {
     console.error('Missing API KEY in env');
