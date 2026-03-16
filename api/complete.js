@@ -26,10 +26,10 @@ export default async function handler(req, res) {
     }
 
     // جلب الـ API Key من الـ env
-    const apiKey = process.env.PI_SERVER_API_KEY || process.env.SERVER_API_KEY;
+    const apiKey = process.env.PI_API_KEY || process.env.PI_API_KEY;
 
     if (!apiKey) {
-        console.error('PI_SERVER_API_KEY is missing in environment variables');
+        console.error('PI_API_KEY is missing in environment variables');
         return res.status(500).json({ error: 'Server configuration error' });
     }
 
