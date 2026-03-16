@@ -1,169 +1,247 @@
 <!DOCTYPE html>
-<html>
+<html lang="ar" dir="rtl">
 <head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Smart Scout Payment</title>
 
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700&display=swap');
 
-<title>Smart Scout</title>
+        body {
+            font-family: 'Cairo', Arial, sans-serif;
+            background: linear-gradient(135deg, #0f0f14, #1a1a24);
+            color: white;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            margin: 0;
+            overflow: hidden;
+        }
 
-<script src="https://sdk.minepi.com/pi-sdk.js"></script>
+        .container {
+            background: rgba(28, 28, 37, 0.95);
+            backdrop-filter: blur(20px);
+            padding: 40px 30px;
+            border-radius: 24px;
+            text-align: center;
+            width: 340px;
+            box-shadow: 0 20px 60px rgba(139, 92, 246, 0.3);
+            border: 1px solid rgba(139, 92, 246, 0.2);
+            transition: all 0.4s ease;
+        }
 
-<style>
+        .logo {
+            font-size: 32px;
+            font-weight: 700;
+            margin-bottom: 10px;
+            color: #8b5cf6;
+            letter-spacing: 1px;
+        }
 
-body{
-background:#0b1020;
-color:white;
-font-family:Arial;
-text-align:center;
-padding-top:120px;
-}
+        .pi-icon {
+            font-size: 42px;
+            color: #8b5cf6;
+            margin-bottom: 8px;
+        }
 
-button{
-background:#6f3ff5;
-color:white;
-border:none;
-padding:15px 25px;
-font-size:18px;
-border-radius:10px;
-cursor:pointer;
-margin:10px;
-}
+        .user-info {
+            margin: 15px 0;
+            padding: 12px;
+            background: rgba(139, 92, 246, 0.1);
+            border-radius: 12px;
+            font-size: 15px;
+            display: none;
+        }
 
-#userBox{
-margin-top:40px;
-font-size:18px;
-}
+        .amount {
+            font-size: 26px;
+            font-weight: 600;
+            margin: 25px 0;
+            color: #fff;
+        }
 
-</style>
+        button {
+            background: linear-gradient(90deg, #8b5cf6, #7c3aed);
+            border: none;
+            padding: 16px 30px;
+            border-radius: 16px;
+            color: white;
+            font-size: 18px;
+            font-weight: 600;
+            cursor: pointer;
+            width: 100%;
+            margin: 10px 0;
+            transition: all 0.3s ease;
+            box-shadow: 0 8px 25px rgba(139, 92, 246, 0.4);
+        }
 
+        button:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 12px 35px rgba(139, 92, 246, 0.6);
+        }
+
+        button:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+        }
+
+        .status {
+            margin-top: 20px;
+            font-size: 15px;
+            color: #aaa;
+            min-height: 24px;
+        }
+
+        .spinner {
+            display: inline-block;
+            width: 18px;
+            height: 18px;
+            border: 3px solid rgba(255,255,255,0.2);
+            border-top: 3px solid #8b5cf6;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin-left: 8px;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        .success { color: #22c55e !important; }
+        .error { color: #ef4444 !important; }
+    </style>
+
+    <script src="https://sdk.minepi.com/pi-sdk.js"></script>
 </head>
-
 <body>
 
-<h1>Smart Scout</h1>
+<div class="container">
+    <div class="pi-icon">π</div>
+    <div class="logo">Smart Scout</div>
 
-<button onclick="login()">Login with Pi Wallet</button>
+    <!-- معلومات المستخدم بعد الربط -->
+    <div class="user-info" id="userInfo">
+        مرحباً، <span id="username" style="color:#8b5cf6; font-weight:600;"></span> 👋
+    </div>
 
-<div id="userBox"></div>
+    <div class="amount">
+        المبلغ: <b>1 π</b>
+    </div>
 
-<br>
+    <!-- زر الربط -->
+    <button id="loginBtn" onclick="loginWithPi()">ربط المحفظة (Login with Pi)</button>
 
-<button onclick="pay()">Support 1 Pi</button>
+    <!-- زر الدفع (يظهر بعد الربط) -->
+    <button id="payBtn" onclick="pay()" style="display:none;">ادفع 1 π الآن</button>
+
+    <div class="status" id="status">جاهز للربط...</div>
+</div>
 
 <script>
+    // ====================== تهيئة الـ SDK (Testnet) ======================
+    Pi.init({ version: "2.0", sandbox: true });   // ← Testnet مفعل
 
-Pi.init({ version:"2.0", sandbox: false});
+    let currentUser = null;
+    let accessToken = null;
 
-let authData=null;
+    // ====================== ربط المحفظة ======================
+    async function loginWithPi() {
+        const statusEl = document.getElementById("status");
+        const loginBtn = document.getElementById("loginBtn");
+        const payBtn = document.getElementById("payBtn");
+        const userInfo = document.getElementById("userInfo");
+        const usernameEl = document.getElementById("username");
 
-async function login(){
+        statusEl.innerHTML = 'جاري الربط<span class="spinner"></span>';
 
-const scopes=[
-'username',
-'payments',
-'wallet_address'
-];
+        try {
+            const authResult = await Pi.authenticate(
+                ['username', 'payments'],   // صلاحيات مطلوبة للدفع
+                async (incompletePayment) => {
+                    // التعامل مع المدفوعات غير المكتملة
+                    statusEl.innerText = "إكمال دفع سابق...";
+                    await fetch("/api/complete", {
+                        method: "POST",
+                        headers: { "Content-Type": "application/json" },
+                        body: JSON.stringify({ ...incompletePayment, accessToken })
+                    });
+                    statusEl.innerText = "تم إكمال الدفع السابق ✅";
+                }
+            );
 
-try{
+            currentUser = authResult.user;
+            accessToken = authResult.accessToken;
 
-const auth=await Pi.authenticate(scopes,{
+            // تحديث الواجهة
+            usernameEl.textContent = currentUser.username || "Pioneer";
+            userInfo.style.display = "block";
+            loginBtn.style.display = "none";
+            payBtn.style.display = "block";
 
-onIncompletePaymentFound:async function(payment){
+            statusEl.innerHTML = 'تم ربط المحفظة بنجاح <span style="color:#22c55e">✅</span>';
 
-console.log("Pending payment:",payment);
+            console.log("✅ User authenticated:", currentUser);
 
-await fetch("/api/complete",{
-method:"POST",
-headers:{
-"Content-Type":"application/json"
-},
-body:JSON.stringify({
-paymentId:payment.identifier,
-txid:payment.transaction?.txid
-})
-});
+        } catch (error) {
+            console.error(error);
+            statusEl.innerHTML = 'فشل الربط ⚠️<br>تأكد أنك داخل Pi Browser';
+        }
+    }
 
-}
+    // ====================== الدفع الحقيقي ======================
+    async function pay() {
+        const statusEl = document.getElementById("status");
 
-});
+        if (!currentUser) {
+            statusEl.innerText = "يرجى ربط المحفظة أولاً";
+            return;
+        }
 
-authData=auth;
+        statusEl.innerHTML = 'جاري فتح نافذة الدفع<span class="spinner"></span>';
 
-document.getElementById("userBox").innerHTML=
-"Username: "+auth.user.username+
-"<br><br>"+
-"Wallet: "+auth.user.wallet_address;
+        Pi.createPayment({
+            amount: 1,
+            memo: "Smart Scout Service",
+            metadata: { orderId: "SS-001", service: "Premium Access" }
+        }, {
+            onReadyForServerApproval: async (paymentId) => {
+                statusEl.innerHTML = 'جاري الموافقة من السيرفر<span class="spinner"></span>';
+                await fetch("/api/approve", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ paymentId, accessToken })
+                });
+            },
 
-}catch(e){
+            onReadyForServerCompletion: async (paymentId, txid) => {
+                statusEl.innerHTML = 'جاري إكمال الدفع<span class="spinner"></span>';
+                await fetch("/api/complete", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ paymentId, txid, accessToken })
+                });
+                statusEl.innerHTML = '✅ تم الدفع بنجاح!<br>شكراً لك';
+                document.getElementById("payBtn").innerText = "تم الدفع ✓";
+            },
 
-alert("Login error "+e.message);
+            onCancel: (paymentId) => {
+                statusEl.innerHTML = '❌ تم إلغاء الدفع';
+            },
 
-}
+            onError: (error) => {
+                console.error(error);
+                statusEl.innerHTML = '⚠️ خطأ في الدفع<br>جرب مرة أخرى';
+            }
+        });
+    }
 
-}
-
-
-function pay(){
-
-if(!authData){
-alert("Login first");
-return;
-}
-
-const paymentData={
-amount:1,
-memo:"Support Smart Scout",
-metadata:{type:"support"}
-};
-
-const callbacks={
-
-onReadyForServerApproval:async function(paymentId){
-
-await fetch("/api/approve",{
-method:"POST",
-headers:{
-"Content-Type":"application/json"
-},
-body:JSON.stringify({
-paymentId:paymentId
-})
-});
-
-},
-
-onReadyForServerCompletion:async function(paymentId,txid){
-
-await fetch("/api/complete",{
-method:"POST",
-headers:{
-"Content-Type":"application/json"
-},
-body:JSON.stringify({
-paymentId:paymentId,
-txid:txid
-})
-});
-
-alert("Payment completed");
-
-},
-
-onCancel:function(){
-alert("Payment cancelled");
-},
-
-onError:function(err){
-alert(err.message);
-}
-
-};
-
-Pi.createPayment(paymentData,callbacks);
-
-}
-
+    // ====================== تلقائي: محاولة الربط عند التحميل ======================
+    window.onload = () => {
+        // يمكنك إزالة هذا السطر إذا أردت زر يدوي فقط
+        // loginWithPi();
+    };
 </script>
 
 </body>
