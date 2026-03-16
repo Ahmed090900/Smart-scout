@@ -1,149 +1,208 @@
-<!DOCTYPE html>
-<html>
+<!doctype html>
+<html lang="en" dir="ltr">
 <head>
-<meta charset="UTF-8">
+
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1"/>
 <title>Smart Scout</title>
 
 <script src="https://sdk.minepi.com/pi-sdk.js"></script>
 
+<script>
+if(window.Pi){
+Pi.init({version:"2.0",sandbox:false});
+}
+</script>
+
 <style>
+
 body{
-font-family:Arial;
-background:#0f172a;
+margin:0;
+background:#0b1020;
 color:white;
-text-align:center;
-padding-top:100px;
+font-family:sans-serif;
+display:flex;
+flex-direction:column;
+align-items:center;
+justify-content:center;
+height:100vh;
 }
 
 button{
-background:#7c3aed;
-color:white;
+padding:14px 30px;
 border:none;
-padding:15px 30px;
-font-size:18px;
-border-radius:8px;
+border-radius:30px;
+background:#5a3df0;
+color:white;
+font-size:16px;
 cursor:pointer;
 margin:10px;
 }
 
 button:hover{
-background:#6d28d9;
+opacity:.9;
 }
+
 </style>
+
 </head>
 
 <body>
 
 <h1>Smart Scout</h1>
 
-<button id="login">Login with Pi</button>
-<br>
-<button id="pay" style="display:none;">Pay 1 Pi</button>
+<button id="loginBtn">Login with Pi</button>
+
+<button id="payBtn" style="display:none">
+Support 1 Pi
+</button>
+
+<button id="cancelBtn" style="display:none">
+Cancel Pending Payment
+</button>
 
 <script>
 
-Pi.init({
-version: "2.0",
-sandbox: true
+let authData=null;
+let lastPaymentId=null;
+
+async function post(url,data){
+
+const r=await fetch(url,{
+method:"POST",
+headers:{
+"Content-Type":"application/json"
+},
+body:JSON.stringify(data)
 });
 
-let currentUser = null;
+return r.json();
 
-document.getElementById("login").onclick = async () => {
+}
 
-try {
+document.getElementById("loginBtn").onclick=async()=>{
 
-const auth = await Pi.authenticate(
-['username','payments'],
-{
-onIncompletePaymentFound: async payment => {
+try{
 
-await fetch("/api/complete",{
+const auth=await Pi.authenticate(
+["username","payments"],
+
+async function(incomplete){
+
+if(!incomplete)return;
+
+console.log("Pending Payment Found",incomplete);
+
+await fetch("/api/cancel",{
 method:"POST",
 headers:{
 "Content-Type":"application/json"
 },
 body:JSON.stringify({
-paymentId: payment.identifier
+paymentId:incomplete.identifier
 })
 });
 
+console.log("Old payment cancelled");
+
 }
-}
+
 );
 
-currentUser = auth.user;
+authData=auth;
 
-alert("Welcome " + currentUser.username);
+document.getElementById("loginBtn").style.display="none";
+document.getElementById("payBtn").style.display="inline-block";
+document.getElementById("cancelBtn").style.display="inline-block";
 
-document.getElementById("pay").style.display="inline-block";
+console.log("User",auth.user.username);
 
-} catch(e){
+}catch(e){
 
-console.log(e);
-alert("Login failed");
+alert("Auth error "+e.message);
 
 }
 
 };
 
-document.getElementById("pay").onclick = async () => {
 
-const paymentData = {
-amount: 1,
-memo: "Smart Scout Payment",
-metadata: {productId:"smartscout"}
+document.getElementById("payBtn").onclick=async()=>{
+
+const paymentData={
+
+amount:1,
+memo:"Support Developer",
+metadata:{type:"support"}
+
 };
 
-const callbacks = {
+const callbacks={
 
-onReadyForServerApproval: async paymentId => {
+onReadyForServerApproval:async function(paymentId){
 
-await fetch("/api/approve",{
-method:"POST",
-headers:{
-"Content-Type":"application/json"
-},
-body:JSON.stringify({
+console.log("Approve",paymentId);
+
+lastPaymentId=paymentId;
+
+await post("/api/approve",{
 paymentId:paymentId
-})
 });
 
 },
 
-onReadyForServerCompletion: async paymentId => {
+onReadyForServerCompletion:async function(paymentId,txid){
 
-await fetch("/api/complete",{
-method:"POST",
-headers:{
-"Content-Type":"application/json"
-},
-body:JSON.stringify({
-paymentId:paymentId
-})
+console.log("Complete",paymentId,txid);
+
+await post("/api/complete",{
+paymentId:paymentId,
+txid:txid
 });
 
+alert("Payment completed. Thank you!");
+
 },
 
-onCancel: paymentId => {
+onCancel:function(){
 
 alert("Payment cancelled");
 
 },
 
-onError: error => {
+onError:function(error){
 
-console.log(error);
+console.error(error);
+alert("Payment error "+error.message);
 
 }
 
 };
 
-Pi.createPayment(paymentData, callbacks);
+Pi.createPayment(paymentData,callbacks);
+
+};
+
+
+document.getElementById("cancelBtn").onclick=async()=>{
+
+if(!lastPaymentId){
+
+alert("No payment yet");
+
+return;
+
+}
+
+await post("/api/cancel",{
+paymentId:lastPaymentId
+});
+
+alert("Payment cancelled");
 
 };
 
 </script>
 
 </body>
+
 </html>
