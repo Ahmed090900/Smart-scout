@@ -155,8 +155,8 @@
             const authResult = await Pi.authenticate(
                 ['username', 'payments'],
                 async (incompletePayment) => {
-                    statusEl.innerText = "يوجد دفع سابق غير مكتمل...";
-                    // يمكن إكمال الدفع السابق هنا لو أردت
+                    statusEl.innerText = "إكمال دفع سابق...";
+                    // يمكن إضافة استدعاء complete هنا لو لزم
                 }
             );
 
@@ -169,9 +169,9 @@
             payBtn.style.display = "block";
 
             statusEl.innerHTML = 'تم ربط المحفظة بنجاح <span style="color:#22c55e">✅</span>';
-            console.log("تم الربط:", currentUser);
+            console.log("User:", currentUser);
         } catch (error) {
-            console.error("خطأ في الربط:", error);
+            console.error("Login error:", error);
             statusEl.innerHTML = 'فشل الربط ⚠️<br>تأكد من Pi Browser';
         }
     }
@@ -192,7 +192,7 @@
             metadata: { orderId: "SS-001", service: "Premium Access" }
         }, {
             onReadyForServerApproval: async (paymentId) => {
-                console.log("طلب موافقة السيرفر - paymentId:", paymentId);
+                console.log("onReadyForServerApproval called - paymentId:", paymentId);
                 statusEl.innerHTML = 'جاري الموافقة من السيرفر<span class="spinner"></span>';
 
                 try {
@@ -202,22 +202,20 @@
                         body: JSON.stringify({ paymentId })
                     });
 
-                    const text = await res.text();
-                    console.log("رد الموافقة:", res.status, text);
-
                     if (!res.ok) {
-                        throw new Error(`فشل الموافقة: ${res.status} - ${text}`);
+                        throw new Error(`Approval failed: ${res.status} - ${await res.text()}`);
                     }
 
+                    console.log("Approval success");
                     statusEl.innerHTML = 'تمت الموافقة... جاري الإكمال';
                 } catch (err) {
-                    console.error("خطأ الموافقة:", err);
+                    console.error("Approval error:", err);
                     statusEl.innerHTML = `خطأ في الموافقة: ${err.message} ⚠️`;
                 }
             },
 
             onReadyForServerCompletion: async (paymentId, txid) => {
-                console.log("طلب إكمال الدفع - paymentId:", paymentId, "txid:", txid);
+                console.log("onReadyForServerCompletion - paymentId:", paymentId, "txid:", txid);
                 statusEl.innerHTML = 'جاري إكمال الدفع<span class="spinner"></span>';
 
                 try {
@@ -227,34 +225,34 @@
                         body: JSON.stringify({ paymentId, txid })
                     });
 
-                    const text = await res.text();
-                    console.log("رد الإكمال:", res.status, text);
-
                     if (!res.ok) {
-                        throw new Error(`فشل الإكمال: ${res.status} - ${text}`);
+                        throw new Error(`Completion failed: ${res.status} - ${await res.text()}`);
                     }
 
+                    console.log("Completion success");
                     statusEl.innerHTML = '✅ تم الدفع بنجاح!<br>شكراً لك';
                     document.getElementById("payBtn").innerText = "تم الدفع ✓";
                 } catch (err) {
-                    console.error("خطأ الإكمال:", err);
+                    console.error("Completion error:", err);
                     statusEl.innerHTML = `خطأ في الإكمال: ${err.message} ⚠️`;
                 }
             },
 
             onCancel: (paymentId) => {
-                console.log("تم إلغاء الدفع:", paymentId);
+                console.log("Payment cancelled:", paymentId);
                 statusEl.innerHTML = '❌ تم إلغاء الدفع';
             },
 
             onError: (error) => {
-                console.error("خطأ Pi SDK:", error);
+                console.error("Pi SDK Error:", error);
                 statusEl.innerHTML = `⚠️ خطأ في الدفع: ${error.message || 'غير معروف'}`;
             }
         });
     }
 
-    // window.onload = () => { loginWithPi(); };  // لو عايز الربط تلقائي، شيل التعليق
+    window.onload = () => {
+        // loginWithPi();   // لو عايز الربط تلقائي، شيل التعليق
+    };
 </script>
 
 </body>
