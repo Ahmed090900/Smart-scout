@@ -1,30 +1,42 @@
 export default async function handler(req, res) {
   if (req.method !== 'POST') {
-    return res.status(405).json({ error: 'Method not allowed' });
+    return res.status(405).json({ error: 'Method Not Allowed' });
   }
 
   const { paymentId } = req.body;
-  const SERVER_API_KEY = process.env.SERVER_API_KEY;
 
-  if (!paymentId || !SERVER_API_KEY) {
-    return res.status(400).json({ error: 'Missing paymentId or API key' });
+  if (!paymentId) {
+    return res.status(400).json({ error: 'paymentId is required' });
+  }
+
+  const apiKey = process.env.PI_SERVER_API_KEY;   // ← اسم المتغير مهم
+
+  if (!apiKey) {
+    console.error("Missing PI_SERVER_API_KEY");
+    return res.status(500).json({ error: 'Server configuration error' });
   }
 
   try {
-    const response = await fetch(`https://api.minepi.com/v2/payments/${paymentId}/approve`, {
+    const piResponse = await fetch(`https://api.minepi.com/v2/payments/${paymentId}/approve`, {
       method: 'POST',
       headers: {
-        'Authorization': `Key ${SERVER_API_KEY}`,
+        'Authorization': `Key ${apiKey}`,
         'Content-Type': 'application/json'
       }
     });
 
-    const data = await response.json();
-    console.log('✅ Approved by server:', data);
+    if (!piResponse.ok) {
+      const errorText = await piResponse.text();
+      console.error("Pi approve failed:", piResponse.status, errorText);
+      return res.status(piResponse.status).json({ error: errorText });
+    }
 
-    return res.status(200).json({ success: true, data });
-  } catch (error) {
-    console.error('❌ Approve error:', error);
-    return res.status(500).json({ error: error.message });
+    const data = await piResponse.json();
+    console.log("Pi approved:", data);
+
+    return res.status(200).json({ status: 'approved' });   // مهم: رد بسيط وسريع
+  } catch (err) {
+    console.error("Approve error:", err);
+    return res.status(500).json({ error: err.message });
   }
-}
+                                 }
