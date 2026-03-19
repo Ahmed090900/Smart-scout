@@ -1,19 +1,6 @@
 {
   "version": 2,
-  "builds": [
-    {
-      "src": "api/**/*.js",
-      "use": "@vercel/node"
-    }
-  ],
   "routes": [
-    {
-      "src": "/api/approve",
-      "dest": "/api/approve.js"
-    },
-    {
-      "src": "/api/complete",
-      "dest": "/api/complete.js"
-    }
+    { "src": "/api/(.*)", "dest": "/api/$1.js" }
   ]
 }
