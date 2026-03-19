@@ -1,75 +1,66 @@
+// pages/api/complete.js
+
 export default async function handler(req, res) {
-    res.setHeader('Content-Type', 'application/json');
+  // 1. السماح فقط بطلبات POST لضمان الأمان وإرسال البيانات في الـ Body
+  if (req.method !== 'POST') {
+    res.setHeader('Allow', ['POST']);
+    return res.status(405).json({ error: `Method ${req.method} Not Allowed` });
+  }
 
-    // السماح فقط بـ POST
-    if (req.method !== 'POST') {
-        return res.status(405).json({ error: 'Method Not Allowed' });
+  // 2. استخراج البيانات (تأكدنا من استخدام نفس المسميات في الـ Frontend)
+  const { paymentId, txid } = req.body;
+
+  console.log("--- [COMPLETE] Process Started ---");
+  console.log("Payment ID:", paymentId);
+  console.log("Transaction ID (TXID):", txid);
+
+  // 3. التحقق من وجود البيانات الأساسية
+  if (!paymentId || !txid) {
+    console.error("❌ Error: Missing paymentId or txid in request body");
+    return res.status(400).json({ error: "Missing paymentId or txid" });
+  }
+
+  const PI_SERVER_API_KEY = process.env.PI_SERVER_API_KEY;
+  const PI_API_BASE = 'https://api.minepi.com/v2';
+
+  if (!PI_SERVER_API_KEY) {
+    console.error("❌ Error: PI_SERVER_API_KEY is not set in Environment Variables");
+    return res.status(500).json({ error: "Server Configuration Error" });
+  }
+
+  try {
+    // 4. إبلاغ سيرفرات Pi بإتمام المعاملة (Complete)
+    const response = await fetch(`${PI_API_BASE}/payments/${paymentId}/complete`, {
+      method: 'POST',
+      headers: {
+        'Authorization': `Key ${PI_SERVER_API_KEY}`,
+        'Content-Type': 'application/json',
+      },
+      // إرسال الـ txid في جسم الطلب هو أمر إلزامي لـ Pi API
+      body: JSON.stringify({ txid })
+    });
+
+    const data = await response.json();
+
+    if (response.ok) {
+      console.log("✅ Payment Completed Successfully on Pi Servers!");
+      
+      // هنا يمكنك إضافة كود لتحديث قاعدة بياناتك (مثلاً: تفعيل اشتراك المستخدم)
+      // await db.orders.update({ where: { paymentId }, data: { status: 'PAID' } });
+
+      return res.status(200).json({ success: true, data });
+    } else {
+      // إذا حدث خطأ (مثل 404 أو 400)، سيظهر هنا بوضوح
+      console.error(`❌ Pi API Complete Error [${response.status}]:`, data);
+      return res.status(response.status).json({
+        error: "Failed to complete payment with Pi Network",
+        details: data
+      });
     }
 
-    // قراءة الـ body
-    let body = {};
-    try {
-        body = req.body || {};
-    } catch (e) {
-        console.error('Error parsing body:', e.message);
-        return res.status(400).json({ error: 'Invalid request body' });
-    }
-
-    const { paymentId, txid } = body;
-
-    // التحقق من البيانات المطلوبة
-    if (!paymentId || !txid) {
-        console.log('Missing required fields in body:', { body });
-        return res.status(400).json({ 
-            error: 'paymentId and txid are required' 
-        });
-    }
-
-    // جلب الـ API Key من الـ env
-    const apiKey = process.env.PI_SERVER_API_KEY || process.env.SERVER_API_KEY;
-
-    if (!apiKey) {
-        console.error('PI_SERVER_API_KEY is missing in environment variables');
-        return res.status(500).json({ error: 'Server configuration error' });
-    }
-
-    try {
-        const piResponse = await fetch(`https://api.minepi.com/v2/payments/${paymentId}/complete`, {
-            method: 'POST',
-            headers: {
-                'Authorization': `Key ${apiKey}`,
-                'Content-Type': 'application/json'
-            },
-            body: JSON.stringify({ txid })
-        });
-
-        const data = await piResponse.json();
-
-        if (!piResponse.ok) {
-            console.error('Pi complete API failed:', {
-                status: piResponse.status,
-                response: data
-            });
-            return res.status(piResponse.status).json(data);
-        }
-
-        console.log('Payment completed successfully:', {
-            paymentId,
-            txid,
-            piResponse: data
-        });
-
-        // رد بسيط وسريع لـ Pi SDK
-        return res.status(200).json({ 
-            success: true,
-            message: 'Payment completed'
-        });
-
-    } catch (error) {
-        console.error('Error in complete handler:', {
-            message: error.message,
-            stack: error.stack
-        });
-        return res.status(500).json({ error: 'Internal server error' });
-    }
-}
+  } catch (error) {
+    console.error("💥 Critical Server Error during Complete:", error.message);
+    return res.status(500).json({ error: "Internal Server Error", message: error.message });
+  }
+          }
+        
