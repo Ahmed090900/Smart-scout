@@ -1,32 +1,24 @@
 export default async function handler(req, res) {
   res.setHeader('Content-Type', 'application/json');
 
-  if (req.method !== 'POST') {
-    return res.status(405).json({ error: 'Method Not Allowed' });
-  }
-
-  let body = {};
-  try {
-    body = req.body;  // لو مفيش body-parser، ممكن يكون undefined
-  } catch (e) {
-    console.error('Body parse error:', e);
-  }
-
-  const { paymentId } = body;
+  // 1. السماح بـ POST و GET لضمان وصول البيانات بأي طريقة
+  const paymentId = req.body?.paymentId || req.query?.paymentId;
 
   if (!paymentId) {
-    console.log('Missing paymentId in body:', body);  // هيظهر في logs
+    console.error('❌ Error: paymentId is missing. Received Body:', req.body, 'Received Query:', req.query);
     return res.status(400).json({ error: 'paymentId is required' });
   }
 
-  const apiKey = process.env.PI_SERVER_API_KEY || process.env.SERVER_API_KEY;
-
+  // 2. التحقق من وجود المفتاح بوضوح
+  const apiKey = process.env.PI_SERVER_API_KEY;
   if (!apiKey) {
-    console.error('Missing API KEY in env');
-    return res.status(500).json({ error: 'Server not configured' });
+    console.error('❌ Error: PI_SERVER_API_KEY is not defined in Environment Variables');
+    return res.status(500).json({ error: 'Server configuration error (Missing API Key)' });
   }
 
   try {
+    console.log(`🚀 Attempting to approve payment: ${paymentId}`);
+    
     const piRes = await fetch(`https://api.minepi.com/v2/payments/${paymentId}/approve`, {
       method: 'POST',
       headers: {
@@ -35,17 +27,31 @@ export default async function handler(req, res) {
       }
     });
 
-    const data = await piRes.json();
-
-    if (!piRes.ok) {
-      console.error('Pi API error:', piRes.status, data);
-      return res.status(piRes.status).json(data);
+    // جلب الرد كنص أولاً لتجنب مشاكل الـ JSON parsing لو الرد فارغ
+    const responseText = await piRes.text();
+    let data;
+    try {
+      data = JSON.parse(responseText);
+    } catch (e) {
+      data = { message: responseText };
     }
 
-    console.log('Approved successfully:', data);
-    return res.status(200).json({ success: true });
+    if (!piRes.ok) {
+      // هنا يظهر الـ 404 الشهير
+      console.error(`❌ Pi API Error [Status ${piRes.status}]:`, data);
+      return res.status(piRes.status).json({
+        error: 'Pi API Rejected the request',
+        status: piRes.status,
+        details: data,
+        tip: "If 404, double check if your API Key matches the environment (Sandbox vs Mainnet)"
+      });
+    }
+
+    console.log('✅ Approved successfully:', data);
+    return res.status(200).json({ success: true, data });
+
   } catch (err) {
-    console.error('Fetch error:', err);
-    return res.status(500).json({ error: err.message });
+    console.error('💥 Critical Fetch Error:', err.message);
+    return res.status(500).json({ error: 'Internal Server Error', message: err.message });
   }
 }
