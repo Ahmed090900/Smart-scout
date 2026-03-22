@@ -1,368 +1,276 @@
 <!DOCTYPE html>
 <html lang="ar" dir="rtl">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <meta name="theme-color" content="#0b1020"/>
-  <title>Pi Payment Support | دعم المطور</title>
-  <link rel="icon" href="./logo.jpg" type="image/jpeg"/>
-  <link rel="preconnect" href="https://fonts.googleapis.com"/>
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
-  <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet"/>
-  
-  <script src="https://sdk.minepi.com/pi-sdk.js"></script>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>بوابة مدفوعات Smart Scout - Pi Network</title>
+    <script src="https://sdk.minepi.com/pi-sdk.js"></script>
+    <style>
+        /* --- التصميم الأساسي (Theme) --- */
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: #1a1a2e; /* لون خلفية غامق ومريح */
+            color: #fff;
+            margin: 0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            overflow: hidden; /* لمنع السكرول */
+        }
 
-  <style>
-    :root {
-      --bg: #0a0e1a;
-      --card: rgba(20, 25, 45, 0.7);
-      --primary: #6366f1;
-      --primary-dark: #4f46e5;
-      --accent: #facc15;
-      --text: #e2e8f0;
-      --text-muted: #94a3b8;
-      --success: #10b981;
-      --error: #ef4444;
-    }
+        /* --- حاوية البطاقة (Card) --- */
+        .pay-card {
+            background: rgba(255, 255, 255, 0.05); /* زجاجي شفاف */
+            backdrop-filter: blur(10px); /* تأثير ضبابي خيالي */
+            border-radius: 20px;
+            padding: 40px;
+            width: 350px;
+            text-align: center;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            
+            /* --- أنيميشن ظهور البطاقة --- */
+            animation: fadeInCard 1s ease-out forwards;
+            opacity: 0;
+            transform: translateY(20px);
+        }
 
-    * {
-      margin: 0;
-      padding: 0;
-      box-sizing: border-box;
-    }
+        @keyframes fadeInCard {
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
 
-    body {
-      font-family: 'Cairo', system-ui, sans-serif;
-      background: var(--bg);
-      color: var(--text);
-      min-height: 100vh;
-      display: flex;
-      flex-direction: column;
-      overflow-x: hidden;
-    }
+        /* --- الشعار والعنوان --- */
+        .pi-logo {
+            width: 80px;
+            height: 80px;
+            background-color: #fff;
+            border-radius: 50%;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            margin: 0 auto 20px;
+            font-size: 40px;
+            color: #6200ea; /* لون باي الرسمي */
+            box-shadow: 0 0 20px rgba(98, 0, 234, 0.5);
+            
+            /* --- أنيميشن نبض الشعار --- */
+            animation: pulseLogo 2s infinite;
+        }
 
-    header {
-      position: fixed;
-      top: 0;
-      left: 0;
-      right: 0;
-      height: 70px;
-      background: rgba(10, 14, 26, 0.85);
-      backdrop-filter: blur(16px);
-      border-bottom: 1px solid rgba(99, 102, 241, 0.15);
-      z-index: 1000;
-      padding: 0 20px;
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-    }
+        @keyframes pulseLogo {
+            0% { box-shadow: 0 0 0 0 rgba(98, 0, 234, 0.7); }
+            70% { box-shadow: 0 0 0 20px rgba(98, 0, 234, 0); }
+            100% { box-shadow: 0 0 0 0 rgba(98, 0, 234, 0); }
+        }
 
-    .user-info {
-      display: flex;
-      align-items: center;
-      gap: 12px;
-    }
+        h1 { font-size: 24px; margin-bottom: 10px; color: #e0e0e0; }
+        .welcome-msg { color: #b0b0b0; margin-bottom: 30px; font-size: 16px; }
 
-    .avatar {
-      width: 42px;
-      height: 42px;
-      background: linear-gradient(135deg, var(--primary), var(--primary-dark));
-      border-radius: 50%;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      font-weight: 900;
-      font-size: 18px;
-      color: white;
-      box-shadow: 0 4px 12px rgba(99, 102, 241, 0.4);
-      transition: transform 0.3s ease;
-    }
+        /* --- حاوية المبلغ --- */
+        .amount-container {
+            background-color: rgba(255, 255, 255, 0.03);
+            border-radius: 10px;
+            padding: 20px;
+            margin-bottom: 30px;
+            border: 1px solid rgba(255, 255, 255, 0.05);
+        }
+        .amount { font-size: 48px; font-weight: bold; color: #ffeb3b; } /* لون ذهبي للمبلغ */
+        .currency { font-size: 20px; color: #b0b0b0; margin-right: 5px; }
 
-    .user-text {
-      display: flex;
-      flex-direction: column;
-    }
+        /* --- الزر الخيالي (Floating Button) --- */
+        .pay-btn {
+            background: linear-gradient(45deg, #6200ea, #8e24aa); /* تدرج ألوان باي */
+            color: #fff;
+            border: none;
+            padding: 15px 30px;
+            font-size: 18px;
+            font-weight: bold;
+            border-radius: 50px;
+            cursor: pointer;
+            width: 100%;
+            transition: all 0.3s ease; /* تنعيم كل التأثيرات */
+            box-shadow: 0 5px 15px rgba(98, 0, 234, 0.3);
+            position: relative;
+            overflow: hidden; /* لتأثير اللمعان */
+        }
 
-    .username {
-      font-size: 16px;
-      font-weight: 700;
-      color: var(--accent);
-    }
+        /* --- تأثير الهوفر (Hover) --- */
+        .pay-btn:hover {
+            transform: translateY(-3px); /* يترفع قليلاً */
+            box-shadow: 0 8px 25px rgba(98, 0, 234, 0.5);
+        }
 
-    .status {
-      font-size: 12px;
-      color: var(--text-muted);
-      font-weight: 500;
-    }
+        /* --- تأثير الضغط (Active) --- */
+        .pay-btn:active {
+            transform: translateY(1px); /* ينضغط للأسفل */
+            box-shadow: 0 3px 10px rgba(98, 0, 234, 0.2);
+        }
 
-    .support-btn {
-      background: linear-gradient(135deg, var(--primary), var(--primary-dark));
-      color: white;
-      border: none;
-      padding: 12px 28px;
-      font-size: 15px;
-      font-weight: 700;
-      border-radius: 50px;
-      cursor: pointer;
-      display: flex;
-      align-items: center;
-      gap: 10px;
-      box-shadow: 0 6px 20px rgba(99, 102, 241, 0.35);
-      transition: all 0.35s cubic-bezier(0.34, 1.56, 0.64, 1);
-    }
+        /* --- تأثير اللمعان الخيالي (Shine Effect) --- */
+        .pay-btn::after {
+            content: '';
+            position: absolute;
+            top: -50%;
+            left: -50%;
+            width: 200%;
+            height: 200%;
+            background: rgba(255, 255, 255, 0.2);
+            transform: rotate(45deg);
+            transition: all 0.5s ease;
+            opacity: 0;
+        }
 
-    .support-btn:hover {
-      transform: translateY(-4px) scale(1.04);
-      box-shadow: 0 12px 30px rgba(99, 102, 241, 0.5);
-    }
+        .pay-btn:hover::after {
+            left: 100%;
+            top: 100%;
+            opacity: 1;
+        }
 
-    .support-btn:active {
-      transform: translateY(-1px) scale(0.98);
-    }
+        /* --- حالة التعطيل (Disabled) --- */
+        .pay-btn:disabled {
+            background: #555;
+            cursor: not-allowed;
+            box-shadow: none;
+            transform: none;
+        }
 
-    .main {
-      flex: 1;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      justify-content: center;
-      padding: 120px 20px 60px;
-      text-align: center;
-    }
+        /* --- رسائل الحالة --- */
+        .status-msg {
+            margin-top: 20px;
+            font-size: 14px;
+            min-height: 1em; /* لمنع القفز */
+        }
+        .status-error { color: #ff5252; }
+        .status-success { color: #4caf50; animation: fadeIn 0.5s; }
 
-    .hero {
-      animation: fadeInUp 1.2s ease-out;
-    }
+        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
 
-    .title {
-      font-size: clamp(42px, 10vw, 80px);
-      font-weight: 900;
-      background: linear-gradient(to bottom, #ffffff, #c7d2fe);
-      -webkit-background-clip: text;
-      background-clip: text;
-      color: transparent;
-      line-height: 0.95;
-      margin-bottom: 16px;
-    }
-
-    .subtitle {
-      font-size: clamp(18px, 5vw, 24px);
-      color: var(--text-muted);
-      max-width: 580px;
-      margin: 0 auto 40px;
-      line-height: 1.6;
-    }
-
-    .card {
-      background: var(--card);
-      border: 1px solid rgba(99, 102, 241, 0.18);
-      border-radius: 24px;
-      padding: 40px 28px;
-      max-width: 420px;
-      width: 100%;
-      backdrop-filter: blur(12px);
-      box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
-      animation: fadeIn 1.4s ease-out 0.3s both;
-    }
-
-    .pi-symbol {
-      font-size: 64px;
-      color: var(--primary);
-      margin-bottom: 20px;
-      animation: pulse 2s infinite;
-    }
-
-    .status-message {
-      margin-top: 30px;
-      font-size: 18px;
-      font-weight: 500;
-      min-height: 28px;
-      color: var(--text-muted);
-    }
-
-    .success {
-      color: var(--success);
-      font-weight: 700;
-      animation: bounce 0.6s ease;
-    }
-
-    .error {
-      color: var(--error);
-    }
-
-    .spinner {
-      width: 24px;
-      height: 24px;
-      border: 4px solid rgba(255,255,255,0.15);
-      border-top: 4px solid var(--primary);
-      border-radius: 50%;
-      animation: spin 1s linear infinite;
-      display: inline-block;
-      vertical-align: middle;
-      margin-left: 12px;
-    }
-
-    /* Animations */
-    @keyframes fadeInUp {
-      from { opacity: 0; transform: translateY(40px); }
-      to   { opacity: 1; transform: translateY(0); }
-    }
-
-    @keyframes fadeIn {
-      from { opacity: 0; }
-      to   { opacity: 1; }
-    }
-
-    @keyframes pulse {
-      0%, 100% { transform: scale(1); }
-      50%      { transform: scale(1.08); }
-    }
-
-    @keyframes spin {
-      to { transform: rotate(360deg); }
-    }
-
-    @keyframes bounce {
-      0%, 100% { transform: translateY(0); }
-      50%      { transform: translateY(-10px); }
-    }
-
-    @media (max-width: 480px) {
-      header { padding: 0 16px; height: 60px; }
-      .title { font-size: 48px; }
-      .card { padding: 32px 20px; }
-    }
-  </style>
+    </style>
 </head>
 <body>
 
-  <header>
-    <div class="user-info">
-      <div class="avatar" id="avatar">؟</div>
-      <div class="user-text">
-        <div class="username" id="username">زائر</div>
-        <div class="status" id="status">جاري الاتصال...</div>
-      </div>
-    </div>
-    <button id="supportBtn" class="support-btn" disabled>
-      دعم ١ π
-    </button>
-  </header>
+    <div class="pay-card">
+        <div class="pi-logo">π</div>
+        <h1>بوابة مدفوعات Smart Scout</h1>
+        <p class="welcome-msg">مرحباً بك في عالم Pi Network التجريبي</p>
 
-  <main class="main">
-    <div class="hero">
-      <h1 class="title">دعم المطور</h1>
-      <p class="subtitle">ساهم بـ ١ Pi لدعم تطوير المشروع واستمرار التحديثات</p>
+        <div class="amount-container">
+            <span class="amount">1.0</span>
+            <span class="currency">Pi Network (Sandbox)</span>
+        </div>
+
+        <button class="pay-btn" id="pay-button" onclick="transferPi()" disabled>
+            جاري تهيئة الـ SDK...
+        </button>
+        
+        <p class="status-msg" id="status-message"></p>
     </div>
 
-    <div class="card">
-      <div class="pi-symbol">π</div>
-      <div class="status-message" id="message">جاري التحضير...</div>
-    </div>
-  </main>
+    <script>
+        // --- متغيرات الحالة ---
+        const payBtn = document.getElementById('pay-button');
+        const statusMsg = document.getElementById('status-message');
+        const sandboxMode = true; // نستخدم الـ Sandbox لتخطي الخطوة 10
 
-  <script>
-    Pi.init({ version: "2.0", sandbox: false }); // غيّر sandbox: true لو عايز تختبر
-
-    const avatarEl = document.getElementById('avatar');
-    const usernameEl = document.getElementById('username');
-    const statusEl = document.getElementById('status');
-    const messageEl = document.getElementById('message');
-    const btn = document.getElementById('supportBtn');
-
-    async function showMessage(text, type = 'normal') {
-      messageEl.textContent = text;
-      messageEl.className = 'status-message ' + (type === 'success' ? 'success' : type === 'error' ? 'error' : '');
-    }
-
-    async function init() {
-      try {
-        showMessage('جاري الربط مع Pi...');
-        statusEl.textContent = 'جاري الربط...';
-
-        const auth = await Pi.authenticate(['username', 'payments'], (incomplete) => {
-          console.log('Incomplete payment:', incomplete);
-        });
-
-        const user = auth.user;
-        avatarEl.textContent = user.username?.[0]?.toUpperCase() || '؟';
-        usernameEl.textContent = user.username || 'Pioneer';
-        statusEl.textContent = 'متصل';
-
-        btn.disabled = false;
-        btn.onclick = () => createPayment(auth.accessToken);
-
-        showMessage('جاهز للدعم! اضغط الزر أعلاه');
-
-      } catch (err) {
-        console.error(err);
-        statusEl.textContent = 'فشل الربط';
-        showMessage('فشل الاتصال: ' + (err.message || 'حاول لاحقًا'), 'error');
-      }
-    }
-
-    async function createPayment(accessToken) {
-      try {
-        btn.disabled = true;
-        showMessage('جاري إنشاء الدفع...', 'normal');
-
-        const payment = {
-          amount: 1,
-          memo: 'دعم المطور - Smart Scout',
-          metadata: { type: 'support', from: 'web' }
-        };
-
-        Pi.createPayment(payment, {
-          onReadyForServerApproval: async (paymentId) => {
-            showMessage('جاري الموافقة من السيرفر...');
-            const res = await fetch('/api/approve', {
-              method: 'POST',
-              headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({ paymentId, accessToken })
+        // --- 1. تهيئة الـ SDK (شريان الحياة) ---
+        Pi.init({ version: "2.0", sandbox: sandboxMode })
+            .then(() => {
+                console.log("Pi SDK Initialized!");
+                // تفعيل الزر وتغيير النص بأنيميشن بسيط
+                payBtn.innerText = "تفعيل الدفع (1 Pi)";
+                payBtn.disabled = false;
+                showStatus("الـ SDK جاهز للعمل ✅", "success");
+            })
+            .catch((error) => {
+                console.error("SDK Init failed:", error);
+                payBtn.innerText = "فشل تهيئة SDK";
+                showStatus("فشل الاتصال بـ Pi SDK - افتحه من Pi Browser!", "error");
             });
-            if (res.ok) showMessage('تمت الموافقة');
-            else showMessage('فشل الموافقة', 'error');
-          },
 
-          onReadyForServerCompletion: async (paymentId, txid) => {
-            showMessage('جاري إكمال الدفع...');
-            const res = await fetch('/api/complete', {
-              method: 'POST',
-              headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({ paymentId, txid, accessToken })
-            });
-            if (res.ok) {
-              showMessage('شكرًا لدعمك! تم الدفع بنجاح ✅', 'success');
-              btn.textContent = 'تم الدعم ✓';
-              btn.style.background = 'linear-gradient(135deg, #10b981, #059669)';
-            } else {
-              showMessage('فشل إكمال الدفع', 'error');
+        // --- 2. دالة تحويل Pi (الساحر) ---
+        async function transferPi() {
+            // تعطيل الزر لمنع الضغط المزدوج وأنيميشن "جاري العمل"
+            payBtn.disabled = true;
+            payBtn.innerText = "جاري تحضير المحفظة...";
+            showStatus("جاري التواصل مع شبكة باي...", "success");
+
+            try {
+                // --- ألف: إنشاء عملية الدفع (SDK Request) ---
+                const payment = await Pi.createPayment({
+                    amount: 1.0,
+                    memo: "دفع تجريبي - تفعيل Smart Scout (Step 10)",
+                    metadata: { type: "test_payment", step: "10" },
+                }, {
+                    // --- باء: الرد الآلي من سيرفر Vercel (الموافقة والإكمال) ---
+                    
+                    // 1. السيرفر يوافق على الطلب (Server Approval)
+                    onReadyForServerApproval: (paymentId) => {
+                        console.log("Ready for Server Approval. ID:", paymentId);
+                        payBtn.innerText = "جاري موافقة السيرفر...";
+                        return fetch('/api/approve', { // نستخدم المسار الصافي في Vercel
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({ paymentId })
+                        });
+                    },
+
+                    // 2. السيرفر يكمل المعاملة (Server Completion)
+                    onReadyForServerCompletion: (paymentId, txid) => {
+                        console.log("Ready for Server Completion. ID:", paymentId, "TXID:", txid);
+                        payBtn.innerText = "جاري تأكيد الشبكة...";
+                        return fetch('/api/complete', { // نستخدم المسار الصافي في Vercel
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({ paymentId, txid })
+                        });
+                    },
+
+                    // --- جيم: التعامل مع الأخطاء والإلغاء ---
+                    onCancel: (paymentId) => {
+                        console.log("Payment cancelled. ID:", paymentId);
+                        resetPayButton();
+                        showStatus("تم إلغاء عملية الدفع من قبلك.", "error");
+                    },
+                    onError: (error, payment) => {
+                        console.error("Payment error:", error, payment);
+                        resetPayButton();
+                        showStatus("حدث خطأ أثناء الدفع: " + error.message, "error");
+                    }
+                });
+
+                // --- دال: نجاح العملية بالكامل (The Finale) ---
+                console.log("Payment accomplished:", payment);
+                payBtn.innerText = "تم الدفع بنجاح! 🎉";
+                payBtn.style.background = "#4caf50"; // تحويل الزر للون الأخضر
+                showStatus("مبروك! اكتمل الدفع. تحقق من الـ Checklist الآن.", "success");
+                
+                // يمكنك إضافة تحويل تلقائي للصفحة التالية هنا بعد ثواني
+                // setTimeout(() => { window.location.href = "/success.html"; }, 3000);
+
+            } catch (error) {
+                console.error("Pi.createPayment failed:", error);
+                resetPayButton();
+                showStatus("فشل الدفع: " + error.message, "error");
             }
-          },
+        }
 
-          onCancel: () => {
-            showMessage('تم إلغاء الدفع');
-            btn.disabled = false;
-          },
+        // --- دالة مساعدة لإعادة الزر لحالته الأصلية ---
+        function resetPayButton() {
+            payBtn.disabled = false;
+            payBtn.innerText = "تفعيل الدفع (1 Pi)";
+            payBtn.style.background = "linear-gradient(45deg, #6200ea, #8e24aa)";
+        }
 
-          onError: (err) => {
-            showMessage('خطأ: ' + (err.message || 'حدث خطأ'), 'error');
-            btn.disabled = false;
-          }
-        });
+        // --- دالة مساعدة لعرض رسائل الحالة ---
+        function showStatus(msg, type) {
+            statusMsg.innerText = msg;
+            statusMsg.className = "status-msg " + (type === "error" ? "status-error" : "status-success");
+        }
 
-      } catch (err) {
-        showMessage('فشل إنشاء الدفع: ' + err.message, 'error');
-        btn.disabled = false;
-      }
-    }
-
-    // بدء التشغيل
-    if (document.readyState === 'loading') {
-      document.addEventListener('DOMContentLoaded', init);
-    } else {
-      init();
-    }
-  </script>
+    </script>
 </body>
 </html>
