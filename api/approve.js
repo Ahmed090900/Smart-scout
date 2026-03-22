@@ -1,36 +1,23 @@
 // api/approve.js
-// الكود الجديد المعتمد لتخطي الخطوة 10 بنجاح
-
 export default async function handler(req, res) {
-  // إعدادات الـ CORS للسماح بالاتصال من أي مكان
-  res.setHeader('Access-Control-Allow-Origin', '*');
-  res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
-  res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
+  const apiKey = process.env.PI_API_KEY; // بيسحب المفتاح من إعدادات فيرسيل السرية
 
-  // التعامل مع طلبات التمهيد (Preflight)
-  if (req.method === 'OPTIONS') {
-    return res.status(200).end();
-  }
-
-  // نحن نحتاج فقط للرد بالموافقة (Approve) لتكملة الخطوة 10
   if (req.method === 'POST') {
-    try {
-      // استخراج الـ paymentId للتأكد من وصول الطلب (للمراقبة فقط)
-      const { paymentId } = req.body || {};
-      console.log('Receiving approval request for payment:', paymentId);
+    const { paymentId } = req.body;
+    
+    // نرسل الموافقة لسيرفر باي الرسمي باستخدام المفتاح الخاص بك
+    const response = await fetch(`https://api.minepi.com/v2/payments/${paymentId}/approve`, {
+      method: 'POST',
+      headers: {
+        'Authorization': `Key ${apiKey}`,
+        'Content-Type': 'application/json'
+      }
+    });
 
-      // الرد السحري الذي ينتظره تطبيق باي لإتمام الدفع
-      return res.status(200).json({
-        action: "approve",
-        message: "Payment approved by Smart Scout Server",
-        paymentId: paymentId
-      });
-    } catch (error) {
-      console.error('Logic Error:', error.message);
-      return res.status(500).json({ error: "Internal Server Error" });
+    if (response.ok) {
+      return res.status(200).json({ action: "approve" });
+    } else {
+      return res.status(400).json({ error: "Failed to approve" });
     }
   }
-
-  // في حالة أي طلب آخر
-  res.status(405).json({ error: "Method Not Allowed" });
 }
