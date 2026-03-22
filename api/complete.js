@@ -1,21 +1,29 @@
 // api/complete.js
-export default function handler(req, res) {
-  res.setHeader('Access-Control-Allow-Origin', '*');
-  res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
-  res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
-
-  if (req.method === 'OPTIONS') return res.status(200).end();
+export default async function handler(req, res) {
+  const apiKey = process.env.PI_API_KEY;
 
   if (req.method === 'POST') {
-    const { paymentId } = req.body || {};
-    console.log('Completing payment:', paymentId);
+    const { paymentId, txid } = req.body;
+    
+    try {
+      // إبلاغ سيرفر باي بإتمام المعاملة بنجاح
+      const response = await fetch(`https://api.minepi.com/v2/payments/${paymentId}/complete`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Key ${apiKey}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ txid })
+      });
 
-    // الرد الرسمي لإنهاء المعاملة
-    return res.status(200).json({ 
-      action: "complete", 
-      message: "Payment marked as completed" 
-    });
+      if (response.ok) {
+        return res.status(200).json({ action: "complete", message: "Success" });
+      } else {
+        const errorData = await response.json();
+        return res.status(400).json(errorData);
+      }
+    } catch (error) {
+      return res.status(500).json({ error: error.message });
+    }
   }
-
-  res.status(405).json({ error: "Method Not Allowed" });
 }
