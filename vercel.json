@@ -1,6 +1,6 @@
 {
   "rewrites": [
-    { "source": "/api/pi/approve", "destination": "/api/approve.js" },
-    { "source": "/api/pi/complete", "destination": "/api/complete.js" }
+    { "source": "/api/approve", "destination": "/api/approve.js" },
+    { "source": "/api/complete", "destination": "/api/complete.js" }
   ]
 }
