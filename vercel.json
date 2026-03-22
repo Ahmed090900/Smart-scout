@@ -1,6 +1,6 @@
 {
-  "version": 2,
-  "routes": [
-    { "src": "/api/(.*)", "dest": "/api/$1.js" }
+  "rewrites": [
+    { "source": "/api/pi/approve", "destination": "/api/approve.js" },
+    { "source": "/api/pi/complete", "destination": "/api/complete.js" }
   ]
 }
