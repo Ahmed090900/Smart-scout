@@ -1,117 +1,95 @@
-<!DOCTYPE html>
-<html lang="ar" dir="rtl">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Smart Scout | Pi Payment</title>
-    <script src="https://sdk.minepi.com/pi-sdk.js"></script>
-    <style>
-        body {
-            margin: 0; padding: 0;
-            background: radial-gradient(circle at center, #2e1a47 0%, #1a1a2e 100%);
-            height: 100vh; display: flex; justify-content: center; align-items: center;
-            font-family: sans-serif; color: white; overflow: hidden;
-        }
-        .card {
-            background: rgba(255, 255, 255, 0.07);
-            backdrop-filter: blur(15px);
-            border-radius: 30px; padding: 40px;
-            width: 90%; max-width: 400px; text-align: center;
-            border: 1px solid rgba(255, 255, 255, 0.1);
-            box-shadow: 0 20px 50px rgba(0,0,0,0.5);
-        }
-        .btn-pay {
-            background: linear-gradient(135deg, #6200ea 0%, #b388ff 100%);
-            border: none; padding: 18px; width: 100%;
-            border-radius: 15px; color: white; font-weight: bold;
-            font-size: 18px; cursor: pointer; transition: 0.3s;
-        }
-        .btn-pay:disabled { background: #444; cursor: not-allowed; opacity: 0.6; }
-        #status { margin-top: 20px; font-size: 13px; color: #ffeb3b; }
-    </style>
-</head>
-<body>
-
-<div class="card">
-    <div style="font-size: 50px; margin-bottom: 10px;">π</div>
-    <h2>تفعيل Smart Scout</h2>
-    <p>سيتم خصم 1 Pi لتفعيل المميزات</p>
-    
-    <div style="background: rgba(0,0,0,0.2); padding: 15px; border-radius: 10px; margin: 20px 0;">
-        <span style="font-size: 30px; color: #ffeb3b;">1.0</span> <small>Pi</small>
-    </div>
-
-    <button id="btn" class="btn-pay" onclick="startProcess()" disabled>انتظر تهيئة الشبكة...</button>
-    <div id="status">جاري الاتصال بـ Pi Network...</div>
-</div>
-
 <script>
     const btn = document.getElementById('btn');
     const status = document.getElementById('status');
 
-    // 1. وظيفة التهيئة والربط
+    let currentUser = null;
+
+    // 1. تهيئة Pi SDK
     async function initializePi() {
         try {
-            // انتظر ثانية واحدة للتأكد من تحميل الـ SDK في المتصفح
             await new Promise(resolve => setTimeout(resolve, 1000));
-            
+
             if (!window.Pi) {
-                throw new Error("SDK لم يتم تحميله، تأكد من فتحه داخل Pi Browser");
+                throw new Error("افتح الصفحة داخل Pi Browser");
             }
 
-            // تهيئة الـ SDK
-            Pi.init({ version: "2.0", sandbox: true });
-            console.log("SDK Initialized ✅");
+            Pi.init({ version: "2.0", sandbox: true }); // غيرها false في mainnet
 
-            // طلب الصلاحيات
-            const scopes = ['username', 'payments', 'wallet_address'];
+            const scopes = ['username', 'payments'];
             const auth = await Pi.authenticate(scopes, onIncompletePayment);
-            
-            console.log("Authenticated ✅", auth);
+
+            currentUser = auth.user;
+
             btn.disabled = false;
             btn.innerText = "ادفع الآن 1 Pi";
-            status.innerText = "متصل باسم: " + auth.user.username;
+            status.innerText = "مرحبًا: " + currentUser.username;
 
         } catch (e) {
-            console.error(e);
             status.style.color = "#ff5252";
             status.innerText = "خطأ: " + e.message;
         }
     }
 
-    // 2. معالجة الدفع
+    // 2. بدء الدفع
     async function startProcess() {
         btn.disabled = true;
         btn.innerText = "جاري فتح المحفظة...";
-        
+
         try {
-            const payment = await Pi.createPayment({
-                amount: 1.0,
-                memo: "تفعيل الخدمة - Smart Scout",
-                metadata: { internal_id: "order_123" }
+            await Pi.createPayment({
+                amount: 1,
+                memo: "Smart Scout Activation",
+                metadata: { user: currentUser.username }
             }, {
-                onReadyForServerApproval: (id) => {
-                    return fetch('/api/approve', {
+
+                // ✅ مهم جدًا
+                onReadyForServerApproval: async (paymentId) => {
+                    const res = await fetch('/api/approve', {
                         method: 'POST',
-                        headers: {'Content-Type': 'application/json'},
-                        body: JSON.stringify({ paymentId: id })
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ paymentId })
                     });
+
+                    if (!res.ok) {
+                        throw new Error("فشل في الموافقة من السيرفر");
+                    }
+
+                    return res.json();
                 },
-                onReadyForServerCompletion: (id, txid) => {
-                    return fetch('/api/complete', {
+
+                // ✅ مهم جدًا
+                onReadyForServerCompletion: async (paymentId, txid) => {
+                    const res = await fetch('/api/complete', {
                         method: 'POST',
-                        headers: {'Content-Type': 'application/json'},
-                        body: JSON.stringify({ paymentId: id, txid })
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ paymentId, txid })
                     });
+
+                    if (!res.ok) {
+                        throw new Error("فشل في إكمال الدفع");
+                    }
+
+                    return res.json();
                 },
-                onCancel: (id) => { resetBtn(); },
-                onError: (err) => { alert("Error: " + err.message); resetBtn(); }
+
+                onCancel: () => {
+                    status.innerText = "تم إلغاء الدفع";
+                    resetBtn();
+                },
+
+                onError: (err) => {
+                    status.innerText = "خطأ: " + err.message;
+                    resetBtn();
+                }
+
             });
 
-            status.innerText = "تم الدفع بنجاح! 🎉";
+            // ✅ هنا فقط بعد النجاح الحقيقي
+            status.innerText = "تم الدفع بنجاح 🎉";
             btn.innerText = "تم التفعيل ✅";
+
         } catch (e) {
-            alert("خطأ: " + e.message);
+            status.innerText = "فشل الدفع: " + e.message;
             resetBtn();
         }
     }
@@ -122,13 +100,8 @@
     }
 
     function onIncompletePayment(payment) {
-        console.log("يوجد دفع معلق:", payment);
+        console.log("دفع غير مكتمل:", payment);
     }
 
-    // ابدأ العملية عند تحميل الصفحة
     window.onload = initializePi;
 </script>
-
-</body>
-    </html>
-    
